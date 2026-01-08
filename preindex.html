@@ -408,6 +408,12 @@
             <div id="player-wrapper" class="flex-1 relative flex flex-col min-w-0">
                 <div id="video-layer" class="bg-black flex items-center justify-center overflow-hidden w-full h-full relative">
                     <video id="main-video" class="w-full h-full object-contain" playsinline crossOrigin="anonymous"></video>
+                    
+                    <!-- NEW NO SIGNAL OVERLAY -->
+                    <div id="no-signal-overlay" class="absolute inset-0 z-20 bg-black flex items-center justify-center hidden">
+                        <video id="no-signal-video" src="https://killyouridol.altervista.org/img/nosignal.mp4" loop playsinline muted class="w-full h-full object-cover"></video>
+                    </div>
+
                     <!-- UPDATED WATERMARK CONTAINER -->
                     <div id="watermark-container">
                         <img id="player-watermark" src="https://killyouridol.altervista.org/img/logo.svg" alt="Watermark" crossorigin="anonymous">
@@ -820,6 +826,8 @@
 
         const video = document.getElementById('main-video');
         let playerHls = null, playerDash = null, playerShaka = null;
+        let signalTimer = null;
+        let retryTimer = null;
 
         function getDeviceId() {
             let id = localStorage.getItem('kyi_device_id');
@@ -1112,10 +1120,11 @@
                     const favChannels = state.channels.filter(c => state.favorites.includes(c.id));
                     if (favChannels.length > 0) {
                         const randomCh = favChannels[Math.floor(Math.random() * favChannels.length)];
+                        console.log("Starting random favorite channel:", randomCh.name);
                         playChannel(randomCh).catch(e => console.log("Autoplay might be blocked by browser:", e));
                     } else if (state.favorites.length > 0) {
-                        // IDs in favorites but not found in current channel list
-                        console.log("Favorites IDs exist but no channel matched.");
+                         // IDs in favorites but not found in current channel list
+                         console.log("Favorites IDs exist but no channel matched.");
                     }
                 }
                 
@@ -1216,7 +1225,7 @@
             } catch (e) { alert("Errore cattura screenshot (DRM protetto o CORS?) " + e); }
         }
 
-        async function playChannel(ch, sourceIndex = null) {
+        async function playChannel(ch, sourceIndex = null, isRetry = false) {
             state.current = ch;
             if (sourceIndex === null) {
                 const prefs = state.channelPrefs[ch.id];
@@ -1230,6 +1239,34 @@
             }
             if (sourceIndex >= ch.urls.length) sourceIndex = 0;
             state.currentSourceIndex = sourceIndex;
+
+            // NO SIGNAL & RETRY LOGIC START
+            if (!isRetry) {
+                // Se non è un retry, puliamo lo stato precedente
+                clearTimeout(signalTimer);
+                clearInterval(retryTimer);
+                retryTimer = null;
+                document.getElementById('no-signal-overlay').classList.add('hidden');
+                document.getElementById('no-signal-video').pause();
+                
+                // Impostiamo il timer per il No Signal (4.5 secondi)
+                signalTimer = setTimeout(() => {
+                    console.log("Signal timeout reached. Showing No Signal.");
+                    const nsOverlay = document.getElementById('no-signal-overlay');
+                    const nsVideo = document.getElementById('no-signal-video');
+                    nsOverlay.classList.remove('hidden');
+                    nsVideo.play().catch(e => console.log("No signal video play failed", e));
+                    
+                    // Avvia il loop di controllo in background
+                    if (!retryTimer) {
+                        retryTimer = setInterval(() => {
+                            console.log("Background check: retrying channel...");
+                            playChannel(ch, sourceIndex, true);
+                        }, 5000);
+                    }
+                }, 4500);
+            }
+            // END NO SIGNAL LOGIC
 
             const url = ch.urls[sourceIndex];
             
@@ -1264,11 +1301,25 @@
             if (playerDash) { playerDash.reset(); playerDash = null; }
             if (playerShaka) { await playerShaka.destroy(); playerShaka = null; }
             
+            // Non resettare src se è un retry background per evitare sfarfallii se possibile,
+            // ma per riprovare serve ricaricare.
             video.pause(); video.removeAttribute('src'); video.load();
 
             const drmData = state.drm[ch.id];
             document.getElementById('btn-drm-trigger').classList.toggle('hidden', !drmData);
             document.getElementById('decoder-badge').classList.toggle('hidden', !drmData);
+
+            // Success Handler per cancellare il No Signal
+            const onPlaySuccess = () => {
+                console.log("Signal detected! Clearing No Signal overlay.");
+                clearTimeout(signalTimer);
+                clearInterval(retryTimer);
+                retryTimer = null;
+                document.getElementById('no-signal-overlay').classList.add('hidden');
+                document.getElementById('no-signal-video').pause();
+                video.removeEventListener('playing', onPlaySuccess);
+            };
+            video.addEventListener('playing', onPlaySuccess, { once: true });
 
             let eng = state.engine;
             
@@ -1293,7 +1344,10 @@
                     playerDash.initialize(video, url, true);
                 } else { video.src = url; }
                 await video.play();
-            } catch (e) { console.error("Playback error:", e); }
+            } catch (e) { 
+                console.error("Playback error:", e);
+                // Non facciamo nulla qui, lasciamo che scatti il timeout o che continui il retry
+            }
 
             updateEngineUI(state.engine);
             saveChannelPrefs(ch.id, state.engine, sourceIndex);
