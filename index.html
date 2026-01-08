@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -7,24 +8,336 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KillYourIdol v6.0 Ultimate</title>
-    
-    <!-- External Libs -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Anime.js (Animations) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    
     <!-- Video Engines -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        :root {
+            /* --- VARIABLE SYSTEM v6.0 --- */
+            
+            /* CORE COLORS & OPACITY */
+            --bg-color: #000000;
+            --text-color: #d1d5db;
+            --accent-color: #3b82f6; 
+            
+            /* VIGNETTE SETTINGS */
+            --vignette-color: 0, 0, 0;
+            --vignette-alpha: 0.8;
+            --vignette-start: 20%;
+            --vignette-end: 100%;
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+            /* PLAYER UI SPECIFICS */
+            --btn-bg-color: 10, 15, 28;
+            --btn-bg-alpha: 0.35;
+            --btn-border-color: 255, 255, 255;
+            --btn-border-alpha: 0.1;
+            --btn-hover-bg: 59, 130, 246;
+            --btn-hover-alpha: 0.2;
+            
+            /* GLASS CORE */
+            --glass-base-r: 10;
+            --glass-base-g: 15;
+            --glass-base-b: 28;
+            --glass-bg-alpha: 0.1;
+            --glass-blur: 25px;
+            --glass-saturate: 180%;
+            --glass-border-alpha: 0.08;
+
+            /* WATERMARK SETTINGS */
+            --wm-opacity: 0.8;
+            --wm-scale: 1;
+            --wm-bg-color: 255, 255, 255; /* RGB */
+            --wm-bg-alpha: 0.1;
+            --wm-blur: 5px;
+            --wm-padding: 10px;
+            --wm-radius: 12px;
+
+            /* LOADER SETTINGS (NEW) */
+            --loader-logo-scale: 0.6;
+            --loader-logo-opacity: 1;
+
+            /* GEOMETRY & SPACING */
+            --radius-panel: 24px; 
+            --radius-btn: 16px;   
+            --radius-input: 12px;
+            
+            --spacing-base: 16px; 
+            --spacing-lg: 40px;   
+            
+            --anim-speed: 0.4s;   
+
+            /* TYPOGRAPHY */
+            --font-size-base: 14px;
+            --font-size-title: 30px;
+            --font-size-ui: 10px;
+
+            /* COMPONENTS */
+            --thumb-size: 16px;
+            --thumb-bg: rgba(255, 255, 255, 0.9);
+            --track-height: 4px;
+            --track-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            user-select: none;
+            touch-action: manipulation;
+            transition: background-color var(--anim-speed) ease, color var(--anim-speed) ease;
+            height: 100dvh;
+        }
+
+        /* DYNAMIC OVERRIDES */
+        .dyn-radius-panel { border-radius: var(--radius-panel) !important; }
+        .dyn-radius-btn { border-radius: var(--radius-btn) !important; }
+        .dyn-radius-input { border-radius: var(--radius-input) !important; }
+        
+        .dyn-p-base { padding: var(--spacing-base) !important; }
+        .dyn-p-lg { padding: var(--spacing-lg) !important; }
+        .dyn-gap-base { gap: var(--spacing-base) !important; }
+        
+        .dyn-text-base { font-size: var(--font-size-base) !important; }
+        .dyn-text-title { font-size: var(--font-size-title) !important; }
+        .dyn-text-ui { font-size: var(--font-size-ui) !important; }
+
+        .glass-panel {
+            background: rgba(var(--glass-base-r), var(--glass-base-g), var(--glass-base-b), var(--glass-bg-alpha));
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+            border: 1px solid rgba(255, 255, 255, var(--glass-border-alpha));
+            transition: all var(--anim-speed) ease;
+        }
+
+        .custom-player-btn {
+            background: rgba(var(--btn-bg-color), var(--btn-bg-alpha)) !important;
+            border: 1px solid rgba(var(--btn-border-color), var(--btn-border-alpha)) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+        
+        .custom-player-btn:hover {
+            background: rgba(var(--btn-hover-bg), var(--btn-hover-alpha)) !important;
+            transform: scale(1.05);
+            border-color: rgba(var(--btn-border-color), calc(var(--btn-border-alpha) + 0.3)) !important;
+        }
+
+        #vignette-layer {
+            position: absolute; inset: 0; z-index: 10; pointer-events: none;
+            background: radial-gradient(circle, transparent var(--vignette-start), rgba(var(--vignette-color), 0.4) 60%, rgba(var(--vignette-color), var(--vignette-alpha)) var(--vignette-end));
+            transition: background 0.5s ease;
+        }
+        
+        /* UPDATED WATERMARK STYLE */
+        #watermark-container {
+            position: absolute;
+            top: 5vh;
+            right: 5vw;
+            z-index: 15;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* Dynamic Props */
+            padding: var(--wm-padding);
+            border-radius: var(--wm-radius);
+            background: rgba(var(--wm-bg-color), var(--wm-bg-alpha));
+            backdrop-filter: blur(var(--wm-blur));
+            -webkit-backdrop-filter: blur(var(--wm-blur));
+            opacity: var(--wm-opacity);
+            transform: scale(var(--wm-scale));
+            transform-origin: top right;
+            transition: all 0.3s ease;
+            
+            /* Optional border for glass effect */
+            border: 1px solid rgba(255,255,255, 0.1);
+        }
+
+        #player-watermark {
+            width: 120px;
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            #watermark-container {
+                top: 20px;
+                right: 20px;
+                /* Scale down slightly on mobile via CSS var override in JS if needed, or media query */
+            }
+            #player-watermark { width: 80px; }
+        }
+
+        .glass-play { box-shadow: 0 0 20px rgba(0,0,0, 0.2); }
+
+        input[type=range].glass-slider { -webkit-appearance: none; background: transparent; }
+        input[type=range].glass-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; height: var(--thumb-size); width: var(--thumb-size);
+            border-radius: 50%; background: var(--thumb-bg); border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer; margin-top: calc((var(--track-height) - var(--thumb-size)) / 2);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5); transition: all var(--anim-speed) ease;
+        }
+        input[type=range].glass-slider::-webkit-slider-thumb:hover { transform: scale(1.2); background: var(--accent-color); }
+        input[type=range].glass-slider::-webkit-slider-runnable-track { width: 100%; height: var(--track-height); cursor: pointer; background: var(--track-bg); border-radius: 2px; }
+
+        .tab-glass-active { position: relative; color: #ffffff !important; }
+        .tab-glass-active::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+            background: rgba(255,255,255,0.2); backdrop-filter: blur(8px) saturate(200%);
+            border-radius: 4px 4px 0 0; box-shadow: 0 -2px 10px rgba(var(--glass-base-r), var(--glass-base-g), var(--glass-base-b), 0.3);
+            animation: tabSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes tabSlideIn { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+
+        details > summary { list-style: none; outline: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] summary ~ * { animation: sweep var(--anim-speed) ease-in-out; }
+        @keyframes sweep { 0% {opacity: 0; transform: translateY(-10px)} 100% {opacity: 1; transform: translateY(0)} }
+        
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.8); }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        
+        video::-webkit-media-controls { display:none !important; }
+        
+        #player-ui-layer {
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s ease;
+            z-index: 100; pointer-events: none; 
+        }
+        #player-ui-layer > * { pointer-events: auto; }
+        .ui-hidden #player-ui-layer { transform: translateY(100%); opacity: 0; pointer-events: none !important; }
+        
+        #main-header {
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s ease;
+            z-index: 101;
+        }
+        .ui-hidden #main-header { transform: translateY(-100%); opacity: 0; }
+
+        #video-layer { position: absolute; inset: 0; z-index: 0; }
+        
+        .category-active { background-color: rgba(var(--btn-bg-color), 0.8); border-color: var(--accent-color); }
+        .category-btn { background: rgba(255,255,255,0.1); }
+
+        #channel-drawer { transition: transform var(--anim-speed) cubic-bezier(0.16, 1, 0.3, 1); }
+        #view-live:fullscreen #channel-drawer { z-index: 2147483647; }
+        #view-live:fullscreen #player-ui-layer { z-index: 2147483646; bottom: 0; position: absolute; }
+        #view-live:fullscreen #main-header { z-index: 2147483646; }
+        #view-live:fullscreen #lcn-overlay { z-index: 2147483647; }
+        #sidebar { transition: transform var(--anim-speed) cubic-bezier(0.16, 1, 0.3, 1); }
+        #view-live:fullscreen #sidebar { z-index: 2147483647; }
+
+        #mobile-keyboard-input { position: absolute; opacity: 0; top: -1000px; pointer-events: none; }
+
+        .popup-menu-enter { animation: popupEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform-origin: bottom center; }
+        @keyframes popupEnter { from { opacity: 0; transform: translateY(10px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .loader-wrapper { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
+        .loader-svg { transform: rotate(-90deg); width: 100%; height: 100%; position: relative; z-index: 10; }
+        .loader-circle-bg { fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 4; }
+        .loader-circle-progress { fill: none; stroke: var(--accent-color); stroke-width: 4; stroke-dasharray: 440; stroke-dashoffset: 440; stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.6)); }
+        
+        #loader-logo {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(var(--loader-logo-scale));
+            opacity: var(--loader-logo-opacity);
+            width: 80px; 
+            height: auto;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .loader-text { 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 900; 
+            font-size: 24px; 
+            color: white; 
+            letter-spacing: -1px; 
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .source-btn-active { background-color: rgba(var(--glass-base-r), var(--glass-base-g), var(--glass-base-b), 0.6); color: white; border-color: var(--accent-color); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        textarea::placeholder { color: rgba(255,255,255,0.2); font-style: italic; }
+        
+        .settings-ghost { background-color: rgba(0,0,0,0.1) !important; backdrop-filter: none !important; pointer-events: none; }
+        .settings-ghost > * { opacity: 0.1; transition: opacity 0.2s; }
+        .settings-ghost .slider-control-active { opacity: 1 !important; pointer-events: auto; }
+
+        input[type="color"] { -webkit-appearance: none; border: none; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; cursor: pointer; padding: 0; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; }
+
+        #player-wrapper { width: 100%; flex: 1; }
+        #view-settings { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease; transform: translateX(-100%); opacity: 0; width: 0; overflow-y: auto !important; }
+        #view-live.desktop-split-view #player-wrapper { flex: none; order: 3; }
+        #view-live.desktop-split-view #view-settings { position: relative; display: block; transform: translateX(0); opacity: 1; z-index: 10; border-right: 1px solid rgba(255,255,255,0.1); border-left: none; order: 1; }
+        #split-resizer { display: none; width: 6px; background: rgba(255,255,255,0.05); cursor: col-resize; z-index: 500; transition: background 0.2s; order: 2; }
+        #split-resizer:hover, #split-resizer.resizing { background: var(--accent-color); }
+        #view-live.desktop-split-view #split-resizer { display: block; }
+
+        #lcn-overlay { pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .lcn-digit { text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        #glow-background { filter: blur(40px); -webkit-filter: blur(40px); opacity: 0.5; transform: scale(1.5); }
+
+        .mobile-layout-force #controls-panel { width: 100% !important; max-width: calc(100% - 24px) !important; margin: 0 auto !important; display: flex !important; flex-wrap: wrap !important; justify-content: space-between !important; align-items: center !important; padding: 12px 16px !important; gap: 12px !important; border-radius: 24px !important; }
+        .mobile-layout-force #play-pause-btn { width: 3.5rem !important; height: 3.5rem !important; order: 1; }
+        .mobile-layout-force #source-switches { order: 2; max-width: 80px; }
+        .mobile-layout-force #controls-panel > .flex-1 { order: 3; flex: 1 !important; justify-content: flex-end !important; min-width: auto !important; }
+        .mobile-layout-force #btn-engine-toggle { padding: 8px 12px !important; }
+        .mobile-layout-force #controls-panel > div:last-child { order: 4; width: 100% !important; margin-top: 4px; padding-top: 12px !important; border-top: 1px solid rgba(255,255,255,0.1); border-left: none !important; padding-left: 0 !important; display: flex; justify-content: space-between; gap: 0 !important; }
+        
+        .draggable-header { cursor: grab; }
+        .draggable-header:active { cursor: grabbing; }
+
+        @media (max-width: 768px) {
+            #view-settings { transform: translateY(100%); width: 100% !important; border-left: none; border-right: none; }
+            #view-settings:not(.hidden) { transform: translateY(0); }
+            #split-resizer { display: none !important; }
+            .dyn-gap-base { gap: 8px !important; }
+            .dyn-p-lg { padding: 16px !important; }
+            .dyn-p-base { padding: 10px !important; }
+            #player-ui-layer { background: transparent !important; padding-top: 0 !important; padding-bottom: env(safe-area-inset-bottom, 20px) !important; }
+            #current-logo-display { width: 3rem !important; height: 3rem !important; border-radius: 12px; margin-top: 4px; }
+            /* Adjusted spacing for mobile */
+            .info-container-mod { margin-bottom: 2px !important; padding-bottom: 0 !important; }
+            #display-name { font-size: 1.4rem !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            
+            #controls-panel { width: 100% !important; max-width: calc(100% - 24px) !important; margin: 0 auto !important; display: flex !important; flex-wrap: wrap !important; justify-content: space-between !important; align-items: center !important; padding: 12px 16px !important; gap: 12px !important; border-radius: 24px !important; }
+            #play-pause-btn { width: 3.5rem !important; height: 3.5rem !important; order: 1; }
+            #source-switches { order: 2; max-width: 80px; }
+            #controls-panel > .flex-1 { order: 3; flex: 1 !important; justify-content: flex-end !important; min-width: auto !important; }
+            #btn-engine-toggle { padding: 8px 12px !important; }
+            #controls-panel > div:last-child { order: 4; width: 100% !important; margin-top: 4px; padding-top: 12px !important; border-top: 1px solid rgba(255,255,255,0.1); border-left: none !important; padding-left: 0 !important; display: flex; justify-content: space-between; gap: 0 !important; }
+            
+            @media (orientation: portrait) { #main-video { object-fit: contain; height: 50vh; width: 100%; } #video-layer { align-items: flex-start; padding-top: env(safe-area-inset-top, 20px); } }
+            @media (orientation: landscape) { #controls-panel { transform: scale(0.9); transform-origin: bottom center; background-color: rgba(0,0,0,0.6); width: auto !important; max-width: 80% !important; flex-wrap: nowrap !important; } #controls-panel > div:last-child { width: auto !important; border-top: none !important; padding-top: 0 !important; border-left: 1px solid rgba(255,255,255,0.1) !important; padding-left: 1rem !important; margin-top: 0; } }
+        }
+    </style>
 </head>
 <body class="min-h-screen flex overflow-hidden">
 
-    <!-- LOADER -->
+    <!-- LOADER (UPDATED STRUCTURE) -->
     <div id="loader" class="fixed inset-0 bg-black z-[3000] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="flex flex-col items-center justify-center">
             <div class="loader-wrapper">
@@ -41,14 +354,6 @@
             <p id="loader-status" class="text-[9px] font-bold text-white/40 uppercase tracking-[0.4em]">Ottimizzazione Cache...</p>
         </div>
         <div id="device-id-display" class="absolute bottom-4 text-[8px] font-mono text-white/20">DEV: ...</div>
-    </div>
-
-    <!-- TOAST NOTIFICATION (New for Autoplay Muted) -->
-    <div id="toast-notification" class="fixed top-24 left-1/2 -translate-x-1/2 z-[2500] pointer-events-none opacity-0 transition-opacity duration-300">
-        <div class="bg-black/80 backdrop-blur-md border border-white/10 rounded-xl px-6 py-3 shadow-2xl flex items-center gap-3">
-            <i data-lucide="volume-x" class="w-4 h-4 text-yellow-500"></i>
-            <span class="text-[10px] font-bold text-white uppercase tracking-wide">Audio disattivato per avvio automatico</span>
-        </div>
     </div>
 
     <!-- LCN OVERLAY -->
@@ -93,7 +398,6 @@
                         </div>
                     </div>
                     <div class="mt-4"><button onclick="exportData()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border border-white/5 text-white/70 hover:bg-white/5 transition-all dyn-radius-btn"><i data-lucide="download" class="w-5 h-5"></i> Backup Locale</button></div>
-                    <div class="mt-2"><label class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border border-white/5 text-white/70 hover:bg-white/5 transition-all dyn-radius-btn cursor-pointer"><i data-lucide="upload" class="w-5 h-5"></i> Ripristina Backup <input type="file" class="hidden" onchange="importData(event)" accept=".json"></label></div>
                 </nav>
                 <div class="p-6 border-t border-white/5 bg-black/20">
                     <span class="block text-[8px] text-white/30 uppercase tracking-widest mb-1">Device ID</span>
@@ -106,12 +410,12 @@
                 <div id="video-layer" class="bg-black flex items-center justify-center overflow-hidden w-full h-full relative">
                     <video id="main-video" class="w-full h-full object-contain" playsinline crossOrigin="anonymous"></video>
                     
-                    <!-- NO SIGNAL OVERLAY -->
+                    <!-- NEW NO SIGNAL OVERLAY -->
                     <div id="no-signal-overlay" class="absolute inset-0 z-20 bg-black flex items-center justify-center hidden">
                         <video id="no-signal-video" src="https://killyouridol.altervista.org/img/nosignal.mp4" loop playsinline muted class="w-full h-full object-cover"></video>
                     </div>
 
-                    <!-- WATERMARK CONTAINER -->
+                    <!-- UPDATED WATERMARK CONTAINER -->
                     <div id="watermark-container">
                         <img id="player-watermark" src="https://killyouridol.altervista.org/img/logo.svg" alt="Watermark" crossorigin="anonymous">
                     </div>
@@ -121,8 +425,8 @@
                 <div id="player-ui-layer" class="absolute inset-0 flex flex-col justify-end">
                     <div id="mobile-gradient-overlay" class="absolute inset-x-0 bottom-0 h-[60%] z-[440] pointer-events-none" style="background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);"></div>
                     <div id="player-controls-container" class="relative z-[450] flex flex-col w-full">
-                        <div class="w-full flex flex-col gap-2">
-                            <!-- Info Canale & Logo -->
+                        <div class="w-full flex flex-col gap-2"> <!-- Reduced gap here -->
+                            <!-- Info Canale & Logo Logic - ADJUSTED SPACING -->
                             <div class="info-container-mod flex items-end gap-6 px-6 lg:px-14 dyn-gap-base dyn-p-lg pb-4">
                                 <div id="current-logo-display" class="relative overflow-hidden w-20 h-20 lg:w-32 lg:h-32 glass-panel rounded-3xl flex items-center justify-center shrink-0 shadow-2xl border border-white/10 dyn-radius-panel">
                                     <div id="glow-background" class="absolute inset-0 z-0 bg-cover bg-center transition-all duration-700"></div>
@@ -138,7 +442,7 @@
                                     <h2 id="display-name" class="text-3xl lg:text-7xl font-black text-white uppercase italic truncate tracking-tighter leading-none text-shadow-lg dyn-text-title">Nessun Segnale</h2>
                                 </div>
                             </div>
-                            <!-- Barra Comandi -->
+                            <!-- Barra Comandi - FULL WIDTH & NO MARGINS -->
                             <div id="controls-panel" class="flex items-center gap-4 glass-panel p-4 lg:p-6 rounded-t-[2.5rem] rounded-b-none shadow-2xl border-x-0 border-t border-b-0 border-white/5 relative w-full dyn-p-base dyn-gap-base" style="border-radius: var(--radius-panel) var(--radius-panel) 0 0;">
                                 <button id="btn-admin-reopen" onclick="toggleSidebar()" class="hidden custom-player-btn w-12 h-12 rounded-xl text-yellow-500 flex items-center justify-center shadow-lg shrink-0 dyn-radius-btn"><i data-lucide="key" class="w-5 h-5"></i></button>
                                 <button id="play-pause-btn" class="custom-player-btn w-16 h-16 lg:w-20 lg:h-20 rounded-[2rem] text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all shrink-0 relative overflow-hidden dyn-radius-panel"><i data-lucide="play" class="w-6 h-6 fill-current relative z-10"></i></button>
@@ -156,7 +460,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- ENGINE MENU -->
+                                    <!-- UPDATED ENGINE MENU WITH BUTTONS -->
                                     <div id="engine-menu" class="hidden absolute bottom-full mb-4 left-1/2 -translate-x-1/2 glass-panel p-2 rounded-2xl shadow-2xl w-48 z-[500] border border-white/10 dyn-radius-panel popup-menu-enter">
                                         <button onclick="setEngine('auto')" id="btn-engine-auto" class="engine-btn w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase text-white/70 hover:glass-play hover:text-white transition-all dyn-radius-btn dyn-text-ui mb-1">Auto Mode</button>
                                         <button onclick="setEngine('hls')" id="btn-engine-hls" class="engine-btn w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase text-white/70 hover:glass-play hover:text-white transition-all dyn-radius-btn dyn-text-ui mb-1">HLS.js</button>
@@ -179,7 +483,7 @@
                     </div>
                 </div>
                 
-                <!-- Floating Create List Modal -->
+                <!-- MOVED MODAL HERE: Floating Create List Modal -->
                 <div id="modal-create-list" class="hidden absolute z-[2200] bg-black/90 backdrop-blur-3xl p-0 rounded-[2rem] w-[300px] shadow-2xl border border-white/10 dyn-radius-panel" style="top: 20%; left: 50%; transform: translateX(-50%);">
                     <div id="create-list-header" class="draggable-header p-4 border-b border-white/10 flex items-center justify-between bg-white/5 rounded-t-[2rem]">
                         <h4 class="text-sm font-black text-white uppercase italic">Nuova Lista</h4>
@@ -257,16 +561,6 @@
                                     <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="stamp" class="w-4 h-4 text-yellow-400"></i> Filigrana / Watermark</span>
                                     <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
                                 </summary>
-                                <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/5">
-                                    <div>
-                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Padding Box</span>
-                                        <input type="range" id="in-wm-padding" min="0" max="50" class="w-full glass-slider h-1">
-                                    </div>
-                                    <div>
-                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Box</span>
-                                        <input type="range" id="in-wm-radius" min="0" max="50" class="w-full glass-slider h-1">
-                                    </div>
-                                </div>
                                 <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
                                     <div>
                                         <div class="flex justify-between mb-2"><span class="text-[10px] font-black uppercase text-white/60">Sfondo Vetro (Overlay)</span></div>
@@ -302,7 +596,7 @@
                                 </div>
                             </details>
 
-                            <!-- LOADER & START SETTINGS -->
+                            <!-- NEW: LOADER & START SETTINGS -->
                             <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
                                 <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
                                     <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="loader" class="w-4 h-4 text-cyan-400"></i> Loader & Start</span>
@@ -341,268 +635,22 @@
                                 </div>
                             </details>
 
-                            <!-- 5. GLASS ENGINE BASE -->
+                            <!-- 5. GLASS ENGINE -->
                             <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
                                 <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
                                     <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="layout" class="w-4 h-4 text-purple-400"></i> Glass Engine Base</span>
                                     <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
                                 </summary>
-                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
-                                    <div class="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-2 block">Tinta Sfondo</span>
-                                            <div class="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
-                                                <input type="color" id="in-glass-base-color" class="w-8 h-8 rounded-lg overflow-hidden border-none p-0 cursor-pointer bg-transparent" title="Scegli colore sfondo">
-                                                <div class="flex flex-col">
-                                                    <span class="text-[9px] font-bold text-white uppercase">Sfondo</span>
-                                                    <span id="hex-glass-base" class="text-[8px] font-mono text-white/40">#000000</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-2 block">Tinta Bordo</span>
-                                            <div class="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
-                                                <input type="color" id="in-glass-border-color" class="w-8 h-8 rounded-lg overflow-hidden border-none p-0 cursor-pointer bg-transparent" title="Scegli colore bordo">
-                                                <div class="flex flex-col">
-                                                    <span class="text-[9px] font-bold text-white uppercase">Bordo</span>
-                                                    <span id="hex-glass-border" class="text-[8px] font-mono text-white/40">#FFFFFF</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div class="flex justify-between items-center mb-2">
-                                            <span class="text-[8px] font-bold uppercase text-white/50">Canali RGB (Avanzato)</span>
-                                        </div>
-                                        <div class="grid grid-cols-3 gap-4">
-                                            <div><label class="text-[8px] text-red-500 uppercase font-bold block mb-1">Red</label><input type="range" id="in-glass-r" min="0" max="255" class="w-full glass-slider h-1"></div>
-                                            <div><label class="text-[8px] text-green-500 uppercase font-bold block mb-1">Green</label><input type="range" id="in-glass-g" min="0" max="255" class="w-full glass-slider h-1"></div>
-                                            <div><label class="text-[8px] text-blue-500 uppercase font-bold block mb-1">Blue</label><input type="range" id="in-glass-b" min="0" max="255" class="w-full glass-slider h-1"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Sfondo</span>
-                                            <input type="range" id="in-glass-alpha" min="0" max="100" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Blur (Sfocatura)</span>
-                                            <input type="range" id="in-glass-blur" min="0" max="100" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Saturazione (%)</span>
-                                            <input type="range" id="in-glass-saturate" min="0" max="300" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Bordo</span>
-                                            <input type="range" id="in-glass-border-alpha" min="0" max="100" class="w-full glass-slider h-1">
-                                        </div>
-                                    </div>
-                                </div>
-                            </details>
-
-                            <!-- 6. GEOMETRIA & SPAZIATURA -->
-                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
-                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
-                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="ruler" class="w-4 h-4 text-indigo-400"></i> Geometria & Spazi</span>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
-                                </summary>
-                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
-                                    <div class="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Pannelli</span>
-                                            <input type="range" id="in-radius-panel" min="0" max="50" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Bottoni</span>
-                                            <input type="range" id="in-radius-btn" min="0" max="30" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Input</span>
-                                            <input type="range" id="in-radius-input" min="0" max="30" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Spaziatura Base</span>
-                                            <input type="range" id="in-spacing-base" min="4" max="40" class="w-full glass-slider h-1">
-                                        </div>
-                                         <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Spaziatura Larga</span>
-                                            <input type="range" id="in-spacing-lg" min="10" max="100" class="w-full glass-slider h-1">
-                                        </div>
-                                    </div>
-                                </div>
-                            </details>
-
-                            <!-- 7. TIPOGRAFIA -->
-                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
-                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
-                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="type" class="w-4 h-4 text-teal-400"></i> Tipografia & Testi</span>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
-                                </summary>
-                                <div class="mb-6">
-                                    <span class="text-[8px] uppercase text-white/30 mb-1 block">Font Principale</span>
-                                    <div class="relative">
-                                        <select id="in-font-family" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white outline-none appearance-none cursor-pointer hover:bg-white/10 transition-all dyn-radius-input">
-                                            <option value="Inter">Inter (Default)</option>
-                                            <option value="Roboto">Roboto (Android Style)</option>
-                                            <option value="Montserrat">Montserrat (Modern)</option>
-                                            <option value="Open Sans">Open Sans (Clean)</option>
-                                            <option value="Courier Prime">Courier Prime (Hacker/Mono)</option>
-                                            <option value="Playfair Display">Playfair Display (Elegant)</option>
-                                        </select>
-                                        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none"></i>
-                                    </div>
-                                </div>
-                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
-                                    <div>
-                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Titoli (Nome Canale)</span>
-                                        <input type="range" id="in-font-title" min="16" max="100" class="w-full glass-slider h-1">
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Testo Base</span>
-                                            <input type="range" id="in-font-base" min="8" max="24" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Testo UI (Etichette)</span>
-                                            <input type="range" id="in-font-ui" min="6" max="18" class="w-full glass-slider h-1">
-                                        </div>
-                                    </div>
-                                </div>
-                            </details>
-
-                            <!-- 8. ANIMAZIONI -->
-                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
-                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
-                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="zap" class="w-4 h-4 text-yellow-400"></i> Velocità Animazioni</span>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
-                                </summary>
                                 <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-4 pt-6">
-                                    <div>
-                                        <div class="flex justify-between mb-2">
-                                            <span class="text-[10px] font-black uppercase text-white/60">Durata Transizioni (ms)</span>
-                                            <span id="anim-val-display" class="text-[10px] font-mono text-white">400ms</span>
-                                        </div>
-                                        <input type="range" id="in-anim-speed" min="0" max="2000" step="50" class="w-full glass-slider h-1">
-                                        <p class="text-[8px] text-white/30 mt-2">Valori bassi = scattante. Valori alti = fluido/lento.</p>
+                                    <div class="flex justify-between text-xs font-bold text-white"><span>Tinta Base Glass (RGB)</span></div>
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div><label class="text-[9px] text-red-500 uppercase font-bold">R</label><input type="range" id="in-glass-r" min="0" max="255" class="w-full glass-slider h-2"></div>
+                                        <div><label class="text-[9px] text-green-500 uppercase font-bold">G</label><input type="range" id="in-glass-g" min="0" max="255" class="w-full glass-slider h-2"></div>
+                                        <div><label class="text-[9px] text-blue-500 uppercase font-bold">B</label><input type="range" id="in-glass-b" min="0" max="255" class="w-full glass-slider h-2"></div>
                                     </div>
+                                    <div class="mt-4"><div class="flex justify-between text-xs font-bold text-white"><span>Blur Sfondo</span></div><input type="range" id="in-glass-blur" min="0" max="100" class="w-full glass-slider h-2 bg-white/10 rounded-lg"></div>
                                 </div>
                             </details>
-
-                            <!-- 9. COMPONENTI UI -->
-                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
-                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
-                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i> Componenti UI</span>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
-                                </summary>
-                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
-                                    <div class="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Grandezza Slider (Thumb)</span>
-                                            <input type="range" id="in-thumb-size" min="8" max="40" class="w-full glass-slider h-1">
-                                        </div>
-                                        <div>
-                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Altezza Barra Slider</span>
-                                            <input type="range" id="in-track-height" min="1" max="20" class="w-full glass-slider h-1">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Colore Sfondo Slider (Thumb)</span>
-                                        <div class="flex items-center gap-4">
-                                             <input type="color" id="in-thumb-bg-color">
-                                             <span class="text-[9px] text-white/40 italic">Colore del pallino di trascinamento</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </details>
-
-                            <!-- 10. TELECOMANDO & LISTE (FIXED) -->
-                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
-                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
-                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="tv" class="w-4 h-4 text-pink-400"></i> Telecomando & Drawer</span>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
-                                </summary>
-                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
-                                    
-                                    <!-- DIMENSIONI -->
-                                    <div>
-                                        <span class="text-[8px] uppercase text-white/30 mb-2 block font-bold tracking-widest">Dimensioni & Struttura</span>
-                                        <div class="grid grid-cols-2 gap-6">
-                                            <div>
-                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Larghezza Pannello</span>
-                                                <input type="range" id="in-drawer-width" min="250" max="600" class="w-full glass-slider h-1">
-                                            </div>
-                                            <div>
-                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Sfondo</span>
-                                                <input type="range" id="in-drawer-bg-alpha" min="0" max="100" class="w-full glass-slider h-1">
-                                            </div>
-                                            <!-- NEW INPUT FOR ITEM HEIGHT -->
-                                            <div>
-                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Altezza Canali</span>
-                                                <input type="range" id="in-drawer-item-height" min="30" max="100" class="w-full glass-slider h-1">
-                                            </div>
-                                            <div>
-                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Spazio tra Canali (Gap)</span>
-                                                <input type="range" id="in-drawer-item-gap" min="0" max="20" class="w-full glass-slider h-1">
-                                            </div>
-                                             <div>
-                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Elementi</span>
-                                                <input type="range" id="in-drawer-item-radius" min="0" max="30" class="w-full glass-slider h-1">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- STILE ATTIVO -->
-                                    <div class="pt-4 border-t border-white/5">
-                                        <span class="text-[8px] uppercase text-white/30 mb-2 block font-bold tracking-widest">Stile Canale Attivo</span>
-                                        <div class="flex items-center gap-6">
-                                            <div>
-                                                <span class="text-[8px] uppercase text-white/30 mb-2 block">Colore Selezione</span>
-                                                <div class="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
-                                                    <input type="color" id="in-drawer-active-bg" class="w-8 h-8 rounded-lg overflow-hidden border-none p-0 cursor-pointer bg-transparent">
-                                                </div>
-                                            </div>
-                                            <div class="flex-1">
-                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Intensità Colore (Alpha)</span>
-                                                <input type="range" id="in-drawer-active-alpha" min="0" max="100" class="w-full glass-slider h-1">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- ELEMENTI UI -->
-                                    <div class="pt-4 border-t border-white/5">
-                                        <span class="text-[8px] uppercase text-white/30 mb-2 block font-bold tracking-widest">Categorie & Ricerca</span>
-                                         <div class="grid grid-cols-2 gap-6">
-                                            <div>
-                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Pillole Categorie</span>
-                                                <input type="range" id="in-drawer-pill-radius" min="0" max="25" class="w-full glass-slider h-1">
-                                            </div>
-                                         </div>
-                                    </div>
-
-                                </div>
-                            </details>
-
-                             <!-- ADVANCED CSS EDITOR -->
-                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
-                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
-                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="code" class="w-4 h-4 text-orange-400"></i> Advanced CSS Editor</span>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
-                                </summary>
-                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-4 pt-6">
-                                    <p class="text-[10px] text-white/40 mb-2">Modifica direttamente lo stile dell'app. Le modifiche vengono salvate in locale.</p>
-                                    <div class="relative w-full h-96 rounded-xl overflow-hidden border border-white/10 bg-[#0d1117]">
-                                        <textarea id="custom-css-editor" class="w-full h-full bg-transparent text-white/80 font-mono text-xs p-4 outline-none resize-none custom-scrollbar" spellcheck="false" style="tab-size: 2; line-height: 1.5;"></textarea>
-                                    </div>
-                                    <div class="flex gap-2 mt-4">
-                                        <button onclick="applyCss()" class="flex-1 py-3 bg-blue-600 rounded-xl text-[10px] font-black uppercase text-white shadow-lg shadow-blue-600/20 dyn-radius-btn hover:bg-blue-500 transition-all">Applica & Salva</button>
-                                        <button onclick="resetCss()" class="px-6 py-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all dyn-radius-btn">Reset</button>
-                                    </div>
-                                </div>
-                            </details>
-
                         </div>
                         <button onclick="resetVisuals()" class="mt-8 w-full py-4 border border-red-500/20 text-red-500 text-[10px] font-black uppercase rounded-xl hover:bg-red-500 hover:text-white transition-all dyn-radius-btn">Ripristina Default</button>
                     </div>
@@ -642,18 +690,6 @@
     </main>
 
     <!-- MODALS -->
-    
-    <div id="modal-confirm" class="hidden fixed inset-0 z-[3000] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6">
-        <div class="glass-panel rounded-[2rem] w-full max-w-sm p-6 space-y-4 shadow-2xl border border-white/10 text-center">
-            <h4 id="confirm-title" class="text-lg font-black text-white uppercase italic">Conferma</h4>
-            <p id="confirm-msg" class="text-xs text-white/60"></p>
-            <div class="flex gap-2 mt-4">
-                <button id="confirm-yes-btn" class="flex-1 py-3 bg-red-600 rounded-xl text-[10px] font-black uppercase text-white hover:bg-red-500">Sì</button>
-                <button onclick="document.getElementById('modal-confirm').classList.add('hidden')" class="flex-1 py-3 glass-panel rounded-xl text-[10px] font-black uppercase text-white/50 hover:text-white">Annulla</button>
-            </div>
-        </div>
-    </div>
-
     <div id="modal-lcn-conflict" class="hidden fixed inset-0 z-[2500] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6">
         <div class="glass-panel rounded-[3rem] w-full max-w-md p-8 space-y-6 shadow-2xl border border-white/10 dyn-radius-panel dyn-p-lg">
             <h4 class="text-xl font-black text-white uppercase italic text-center">Seleziona Canale</h4>
@@ -681,6 +717,7 @@
         </div>
     </div>
     
+    <!-- Modal Add to List (unchanged structure, fixed positioning ok as overlay) -->
     <div id="modal-add-to-list" class="hidden fixed inset-0 z-[2500] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6">
         <div class="glass-panel rounded-[3rem] w-full max-w-md p-10 space-y-6 shadow-2xl border border-white/10 max-h-[80vh] flex flex-col dyn-radius-panel dyn-p-lg">
             <h4 class="text-xl font-black text-white uppercase italic text-center">Aggiungi a Lista</h4>
@@ -688,7 +725,1322 @@
             <button onclick="document.getElementById('modal-add-to-list').classList.add('hidden')" class="w-full py-4 glass-panel rounded-2xl text-[10px] font-black uppercase text-white/30 hover:text-white transition-all shrink-0 dyn-radius-btn">Chiudi</button>
         </div>
     </div>
-    
-    <script src="script.js"></script>
+
+    <script>
+        const DEFAULT_SOURCES_URLS = [
+            "https://dash2.antik.sk/live/test_rai_uno_tizen/playlist.m3u8",
+            "https://iptv-org.github.io/iptv/index.m3u",
+            "https://amg00793-amg00793c23-samsung-it-4780.playouts.now.amagi.tv/playlist/amg00793-bbcstudios-bbcearthitaly-samsungit/playlist.m3u8",
+            "https://cachehsi1a.netplus.ch/tok_eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOiIxNzY3NTc1MTA0Iiwic2lwIjoiIiwicGF0aCI6Ii9saXZlL2Vkcy9yYWkxL2Jyb3dzZXItSExTOC8iLCJzZXNzaW9uX2Nkbl9pZCI6ImRkMWNhOTRiMTI1N2FhNGMiLCJzZXNzaW9uX2lkIjoiIiwiY2xpZW50X2lkIjoiIiwiZGV2aWNlX2lkIjoiIiwibWF4X3Nlc3Npb25zIjowLCJzZXNzaW9uX2R1cmF0aW9uIjowLCJ1cmwiOiJodHRwczovLzEwLjAuMjI5LjE4Iiwic2Vzc2lvbl90aW1lb3V0IjowLCJhdWQiOiI0MSIsInNvdXJjZXMiOlsxMDBdfQ==.3fWbzZ_DMgP2VuhzgPMBL2WcGJjnDg-belqywHI45SKYfov5FqYx0oMcbEszCRlW6s3j-PpSDKzFxf4tbepXTA==/live/eds/rai1/browser-HLS8/rai1.m3u8",
+            "http://davidefulgione.it/tivu.m3u",
+            "https://service-stitcher.clusters.pluto.tv/v1/stitch/embed/hls/channel/608aa7d8359b270007861489/master.m3u8?deviceId=channel&deviceModel=web&deviceVersion=1.0&appVersion=1.0&deviceType=rokuChannel&deviceMake=rokuChannel&deviceDNT=1&advertisingId=channel&e",
+            "https://raw.githubusercontent.com/Free-TV/IPTV/refs/heads/master/playlists/playlist_italy.m3u8",
+            "https://raw.githubusercontent.com/Brenders/Pluto-TV-Italia-M3U/main/PlutoItaly.m3u",
+            "https://gist.githubusercontent.com/greenarw/efa4568ed2fa2e53a1aec9073d027243/raw/7a50a2c1643d1548971928aebdd9e906a2043b9f/tv_italia.m3u",
+            "https://gist.githubusercontent.com/ottagdotcom/78aaba86229e98156e9d4a5cd643fe1c/raw/70b17e59d60b20cf420701cca58f186166102245/canali.m3u",
+            "https://maginetweb-arch.github.io/tileoplayer/tvita.m3u",
+            "https://raw.githubusercontent.com/maginetweb-arch/TVITALIA/refs/heads/main/iptvit.m3u",
+            "https://killyouridol.altervista.org/lista.m3u",
+            "https://raw.githubusercontent.com/Tundrak/IPTV-Italia/main/iptvitaplus.m3u",
+            "https://raw.githubusercontent.com/LITUATUI/M3U-IPTV/main/channels/it.m3u",
+            "https://iptv-org.github.io/iptv/countries/it.m3u",
+            "https://raw.githubusercontent.com/itv-resurrected/itv/main/itv.m3u",
+            "https://d31mw7o1gs0dap.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-y5pbi2sq9r609/NOVE_IT.m3u8",
+            "https://d3562mgijzx0zq.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-kizqtzpvvl3i8/Realtime_IT.m3u8",
+            "https://dk3okdd5036kz.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-o4pw0nc02sthz/Foodnetwork_IT.m3u8",
+            "https://d24aqelmrau4kx.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-l1oas691aj7p2/WBTV_IT.m3u8",
+            "https://d9fqo6nfqlv2h.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ulukbrgm1n3yb/Giallo_IT.m3u8",
+            "https://d1pmpe0hs35ka5.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-39hsskpppgf72/K2_IT.m3u8",
+            "https://d6m7lubks416z.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-zmbstsedxme9s/Frisbee_IT.m3u8",
+            "https://d2j2nqgg7bzth.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-02k1gv1j0ufwn/DMAX_IT.m3u8",
+            "https://d1tidto9vz737l.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-joaw4f4kh2en1/HGTV_IT.m3u8",
+            "https://d205m6k582pec4.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-asg5puyzdtnqu/Motortrend_IT.m3u8",
+            "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/12221/web/master.m3u8",
+            "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11223/tv8web/master.m3u8",
+            "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11219/cieloweb/master.m3u8",
+            "https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/outgest/aa3673f1-e178-44a9-a947-ef41db73211a/manifest.m3u8",
+        ];
+        
+        const LCN_MAP = {
+            'rai 1': 1, 'rai 2': 2, 'rai 3': 3, 'rete 4': 4, 'canale 5': 5, 'italia 1': 6, 'la7': 7, 'tv8': 8, 'nove': 9,
+            '20 mediaset': 20, 'rai 4': 21, 'iris': 22, 'rai 5': 23, 'rai movie': 24, 'rai premium': 25, 'cielo': 26,
+            'twentyseven': 27, 'tv2000': 28, 'la7d': 29, 'la5': 30, 'real time': 31, 'qvc': 32, 'food network': 33,
+            'cine34': 34, 'focus': 35, 'rtl 102.5': 36, 'warner tv': 37, 'giallo': 38, 'top crime': 39, 'boing': 40,
+            'k2': 41, 'rai gulp': 42, 'rai yoyo': 43, 'frisbee': 44, 'boing plus': 45, 'cartoonito': 46, 'super!': 47,
+            'rai news 24': 48, 'mediaset italia 2': 49, 'tgcom24': 51, 'dmax': 52, 'rai storia': 54, 'mediaset extra': 55,
+            'motor trend': 59, 'sportitalia': 60, 'supertennix': 64, 'radio italia tv': 70, 'kiss kiss tv': 72
+        };
+        
+        const DEFAULT_VISUALS = {
+            bodyBg: '#000000',
+            textColor: '#d1d5db',
+            accentColor: '#3b82f6',
+            
+            btnBgColor: '#0a0f1c', btnBgAlpha: 0.35,
+            btnBorderColor: '#ffffff', btnBorderAlpha: 0.1,
+            btnHoverBg: '#3b82f6', btnHoverAlpha: 0.2,
+            vignetteColor: '#000000', vignetteAlpha: 0.8,
+            vignetteStart: 20, vignetteEnd: 100,
+
+            glassR: 10, glassG: 15, glassB: 28,
+            glassAlpha: 0.1, glassBlur: 25, glassSaturate: 180, glassBorderAlpha: 0.08,
+            
+            // NEW WATERMARK PROPS
+            wmBgColor: '#ffffff', wmBgAlpha: 0.1,
+            wmOpacity: 0.8, wmScale: 100, wmBlur: 5, wmScreenshot: false,
+
+            // LOADER PROPS
+            loaderLogoScale: 60, loaderLogoOpacity: 1,
+
+            glowAlpha: 0.6, glowBlur: 40, glowSaturate: 200, glowScale: 1.5,
+            radiusPanel: 24, radiusBtn: 16, spacingBase: 16, animSpeed: 400,
+            fontTitle: 30, fontBase: 14, fontUi: 10,
+            thumbSize: 16, trackHeight: 4
+        };
+
+        const state = {
+            deviceId: '',
+            sources: [],
+            favorites: [],
+            customLists: [], 
+            drm: {},
+            channels: [], 
+            categories: new Set(['Tutti']),
+            current: null, 
+            currentSourceIndex: 0, 
+            engine: 'auto',
+            unlockSeq: '',
+            drawerTab: 'channels', 
+            activeCategory: 'Tutti',
+            activeListId: null,
+            uiTimeout: null,
+            isUiVisible: true,
+            isUnlocked: false,
+            isMouseOverControls: false, 
+            playRandomOnStart: false,
+            channelPrefs: {}, 
+            visuals: { ...DEFAULT_VISUALS },
+            lcnBuffer: '',
+            lcnTimeout: null,
+            lcnOverrides: {} 
+        };
+
+        const video = document.getElementById('main-video');
+        let playerHls = null, playerDash = null, playerShaka = null;
+        let signalTimer = null;
+        let retryTimer = null;
+
+        function getDeviceId() {
+            let id = localStorage.getItem('kyi_device_id');
+            if (!id) {
+                const nav = window.navigator;
+                const ua = nav.userAgent.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
+                const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+                id = `${ua}-${random}`;
+                localStorage.setItem('kyi_device_id', id);
+            }
+            return id;
+        }
+
+        function initState() {
+            state.deviceId = getDeviceId();
+            const devDisplay = document.getElementById('device-id-display');
+            if(devDisplay) devDisplay.innerText = `DEV: ${state.deviceId}`;
+            const sidebarDevId = document.getElementById('sidebar-device-id');
+            if(sidebarDevId) sidebarDevId.innerText = state.deviceId;
+
+            const savedSources = JSON.parse(localStorage.getItem('kyi_sources_v3'));
+            state.sources = (savedSources && Array.isArray(savedSources)) ? savedSources : DEFAULT_SOURCES_URLS.map(url => ({ url, label: 'Default', color: '#333333' }));
+            state.favorites = JSON.parse(localStorage.getItem('kyi_favs')) || [];
+            state.customLists = JSON.parse(localStorage.getItem('kyi_custom_lists')) || [];
+            state.drm = JSON.parse(localStorage.getItem('kyi_drm')) || {};
+            state.playRandomOnStart = JSON.parse(localStorage.getItem('kyi_random_start')) || false;
+            state.channelPrefs = JSON.parse(localStorage.getItem('kyi_channel_prefs')) || {};
+            state.lcnOverrides = JSON.parse(localStorage.getItem('kyi_lcn_overrides')) || {};
+            
+            const savedVisuals = JSON.parse(localStorage.getItem('kyi_visuals'));
+            if(savedVisuals) state.visuals = { ...DEFAULT_VISUALS, ...savedVisuals };
+            
+            applyVisualSettings();
+            
+            const toggle = document.getElementById('toggle-random-start');
+            if(toggle) {
+                toggle.checked = state.playRandomOnStart;
+                toggle.onchange = (e) => {
+                    state.playRandomOnStart = e.target.checked;
+                    localStorage.setItem('kyi_random_start', JSON.stringify(state.playRandomOnStart));
+                };
+            }
+        }
+
+        function saveChannelPrefs(chId, engine, srcIdx) {
+            if(!chId) return;
+            state.channelPrefs[chId] = { engine: engine, source: srcIdx };
+            localStorage.setItem('kyi_channel_prefs', JSON.stringify(state.channelPrefs));
+        }
+        
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+        }
+
+        function applyVisualSettings() {
+            const r = document.documentElement.style;
+            const v = state.visuals;
+            
+            r.setProperty('--bg-color', v.bodyBg);
+            r.setProperty('--text-color', v.textColor);
+            r.setProperty('--accent-color', v.accentColor);
+            
+            r.setProperty('--glass-base-r', v.glassR);
+            r.setProperty('--glass-base-g', v.glassG);
+            r.setProperty('--glass-base-b', v.glassB);
+            r.setProperty('--glass-bg-alpha', v.glassAlpha);
+            r.setProperty('--glass-blur', v.glassBlur + 'px');
+            r.setProperty('--glass-saturate', v.glassSaturate + '%');
+            r.setProperty('--glass-border-alpha', v.glassBorderAlpha);
+            
+            const btnBg = hexToRgb(v.btnBgColor) || '10, 15, 28';
+            r.setProperty('--btn-bg-color', btnBg);
+            r.setProperty('--btn-bg-alpha', v.btnBgAlpha);
+            const btnBorder = hexToRgb(v.btnBorderColor) || '255, 255, 255';
+            r.setProperty('--btn-border-color', btnBorder);
+            r.setProperty('--btn-border-alpha', v.btnBorderAlpha);
+            const btnHover = hexToRgb(v.btnHoverBg) || '59, 130, 246';
+            r.setProperty('--btn-hover-bg', btnHover);
+            r.setProperty('--btn-hover-alpha', v.btnHoverAlpha);
+            
+            const vinCol = hexToRgb(v.vignetteColor) || '0, 0, 0';
+            r.setProperty('--vignette-color', vinCol);
+            r.setProperty('--vignette-alpha', v.vignetteAlpha);
+            r.setProperty('--vignette-start', v.vignetteStart + '%');
+            r.setProperty('--vignette-end', v.vignetteEnd + '%');
+
+            // WATERMARK
+            const wmBg = hexToRgb(v.wmBgColor) || '255, 255, 255';
+            r.setProperty('--wm-bg-color', wmBg);
+            r.setProperty('--wm-bg-alpha', v.wmBgAlpha);
+            r.setProperty('--wm-opacity', v.wmOpacity);
+            r.setProperty('--wm-scale', v.wmScale / 100);
+            r.setProperty('--wm-blur', v.wmBlur + 'px');
+
+            // LOADER
+            r.setProperty('--loader-logo-scale', v.loaderLogoScale / 100);
+            r.setProperty('--loader-logo-opacity', v.loaderLogoOpacity);
+
+            r.setProperty('--radius-panel', v.radiusPanel + 'px');
+            r.setProperty('--radius-btn', v.radiusBtn + 'px');
+            r.setProperty('--spacing-base', v.spacingBase + 'px');
+            r.setProperty('--anim-speed', v.animSpeed + 'ms');
+            
+            updateVisualsUI();
+        }
+        
+        function updateVisualsUI() {
+            const v = state.visuals;
+            const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+            const setCheck = (id, val) => { const el = document.getElementById(id); if(el) el.checked = val; };
+            
+            setVal('in-body-bg', v.bodyBg);
+            setVal('in-text-color', v.textColor);
+            setVal('in-accent-color', v.accentColor);
+            
+            setVal('in-glass-r', v.glassR); setVal('in-glass-g', v.glassG); setVal('in-glass-b', v.glassB);
+            setVal('in-glass-alpha', Math.round(v.glassAlpha * 100));
+            setVal('in-glass-blur', v.glassBlur);
+
+            setVal('in-btn-bg-color', v.btnBgColor);
+            setVal('in-btn-bg-alpha', Math.round(v.btnBgAlpha * 100));
+            setVal('in-btn-border-color', v.btnBorderColor);
+            setVal('in-btn-border-alpha', Math.round(v.btnBorderAlpha * 100));
+            setVal('in-btn-hover-bg', v.btnHoverBg);
+            setVal('in-btn-hover-alpha', Math.round(v.btnHoverAlpha * 100));
+            
+            setVal('in-vignette-color', v.vignetteColor);
+            setVal('in-vignette-alpha', Math.round(v.vignetteAlpha * 100));
+            setVal('in-vignette-start', v.vignetteStart);
+            setVal('in-vignette-end', v.vignetteEnd);
+
+            // Watermark UI
+            setVal('in-wm-bg-color', v.wmBgColor);
+            setVal('in-wm-bg-alpha', Math.round(v.wmBgAlpha * 100));
+            setVal('in-wm-opacity', Math.round(v.wmOpacity * 100)); // Slider is 0-100, val is 0-1
+            setVal('in-wm-scale', v.wmScale);
+            setVal('in-wm-blur', v.wmBlur);
+            setCheck('in-wm-screenshot', v.wmScreenshot);
+
+            // Loader UI
+            setVal('in-loader-scale', v.loaderLogoScale);
+            setVal('in-loader-opacity', Math.round(v.loaderLogoOpacity * 100));
+        }
+
+        function resetVisuals() {
+            if(confirm("Ripristinare le impostazioni visive originali?")) {
+                state.visuals = { ...DEFAULT_VISUALS };
+                applyVisualSettings();
+                localStorage.setItem('kyi_visuals', JSON.stringify(state.visuals));
+            }
+        }
+
+        async function init() {
+            document.getElementById('loader').classList.remove('hidden');
+            initState();
+            const cachedChannels = localStorage.getItem('kyi_channels_cache');
+            if (cachedChannels) {
+                try {
+                    const parsed = JSON.parse(cachedChannels);
+                    if (parsed && parsed.length > 0) {
+                        state.channels = parsed;
+                        processChannelsForUI();
+                        // Delay loader hide to allow processing
+                        setTimeout(() => {
+                            anime({ targets: '#loader', opacity: 0, scale: 1.1, duration: 600, easing: 'easeInExpo', complete: () => {
+                                document.getElementById('loader').classList.add('hidden');
+                                document.getElementById('loader').style.opacity = 1; 
+                                document.getElementById('loader').style.transform = 'none';
+                            }});
+                        }, 500); 
+                    }
+                } catch(e) { console.error("Cache corrupted", e); }
+            }
+            loadChannels(false, !!cachedChannels);
+            lucide.createIcons();
+            initVisualSliders();
+            initSplitResizer();
+            makeDraggable(document.getElementById("modal-create-list"));
+            
+            document.addEventListener('keydown', handleGlobalKeydown);
+        }
+        
+        async function loadChannels(isReload = false, isBackground = false) {
+            if(isReload || !isBackground) {
+                document.getElementById('loader').classList.remove('hidden');
+                document.getElementById('loader-status').innerText = isReload ? "Aggiornamento Sorgenti..." : "Caricamento...";
+            }
+            
+            const progressCircle = document.getElementById('loader-progress');
+            const circumference = 440; 
+            progressCircle.style.strokeDashoffset = circumference;
+            
+            let allRawChannels = [];
+            let completedFetches = 0;
+            const totalSources = state.sources.length;
+            const loaderState = { percentage: 0 };
+
+            const updateLoader = () => {
+                completedFetches++;
+                const targetPercentage = totalSources > 0 ? Math.min((completedFetches / totalSources) * 100, 100) : 100;
+                if (!isBackground) {
+                    anime({
+                        targets: loaderState,
+                        percentage: targetPercentage,
+                        easing: 'easeOutExpo',
+                        round: 1,
+                        duration: 1500,
+                        update: function() {
+                            document.getElementById('loader-percentage').innerText = loaderState.percentage;
+                            const offset = circumference - (loaderState.percentage / 100) * circumference;
+                            progressCircle.style.strokeDashoffset = offset;
+                        }
+                    });
+                }
+            };
+
+            if (totalSources === 0) {
+                 updateLoader();
+            } else {
+                const promises = state.sources.map(async (src) => {
+                    try {
+                        if(src.url.endsWith('.m3u8') || src.url.endsWith('.mpd')) {
+                            updateLoader();
+                            let name = src.url.split('/').pop().split('.')[0];
+                            return [{
+                                name: name, logo: "", category: "Single Streams", url: src.url, sourceColor: src.color || '#333'
+                            }];
+                        }
+                        let content = null;
+                        try {
+                            const directRes = await fetch(src.url, { signal: AbortSignal.timeout(10000) });
+                            if (directRes.ok) content = await directRes.text();
+                        } catch (err) { console.warn("Direct fetch failed, trying proxy for:", src.url); }
+
+                        if (!content) {
+                            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(src.url)}`;
+                            const proxyRes = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+                            const data = await proxyRes.json();
+                            if (data && data.contents) content = data.contents;
+                        }
+
+                        if (!content) throw new Error("Fetch failed");
+                        updateLoader();
+                        return parseM3U(content, src);
+                    } catch(e) { updateLoader(); return []; }
+                });
+
+                const results = await Promise.all(promises);
+                allRawChannels = [];
+                results.forEach(channels => { allRawChannels = allRawChannels.concat(channels); });
+            }
+            
+            const grouped = {};
+            const categories = new Set();
+            
+            allRawChannels.forEach(ch => {
+                const key = ch.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (ch.category && ch.category !== 'Altri') categories.add(ch.category);
+                let lcn = LCN_MAP[ch.name.toLowerCase().trim()];
+                if (!lcn) {
+                    for (const [mapName, num] of Object.entries(LCN_MAP)) {
+                        if (ch.name.toLowerCase().trim().startsWith(mapName)) {
+                            lcn = num; break;
+                        }
+                    }
+                }
+                if (!grouped[key]) { 
+                    grouped[key] = { id: key, name: ch.name, logo: ch.logo, category: ch.category, urls: [ch.url], lcn: lcn || 9999 }; 
+                } else { 
+                    if (!grouped[key].urls.includes(ch.url)) grouped[key].urls.push(ch.url); 
+                    if (lcn && grouped[key].lcn === 9999) grouped[key].lcn = lcn;
+                }
+            });
+
+            const newChannels = Object.values(grouped).sort((a,b) => {
+                if (a.lcn !== b.lcn) return a.lcn - b.lcn;
+                return a.name.localeCompare(b.name);
+            });
+
+            if (newChannels.length > 0) {
+                state.channels = newChannels;
+                localStorage.setItem('kyi_channels_cache', JSON.stringify(state.channels));
+                processChannelsForUI();
+            }
+
+            // Fixed Random Start Logic
+            if (!isBackground) {
+                if (state.playRandomOnStart && !isReload) {
+                    const favChannels = state.channels.filter(c => state.favorites.includes(c.id));
+                    if (favChannels.length > 0) {
+                        const randomCh = favChannels[Math.floor(Math.random() * favChannels.length)];
+                        console.log("Starting random favorite channel:", randomCh.name);
+                        playChannel(randomCh).catch(e => console.log("Autoplay might be blocked by browser:", e));
+                    } else if (state.favorites.length > 0) {
+                         // IDs in favorites but not found in current channel list
+                         console.log("Favorites IDs exist but no channel matched.");
+                    }
+                }
+                
+                setTimeout(() => {
+                    anime({ targets: '#loader', opacity: 0, scale: 1.1, duration: 600, easing: 'easeInExpo', complete: () => {
+                        document.getElementById('loader').classList.add('hidden');
+                        document.getElementById('loader').style.opacity = 1; 
+                        document.getElementById('loader').style.transform = 'none';
+                    }});
+                }, 1000);
+            }
+        }
+        
+        function processChannelsForUI() {
+            const categories = new Set();
+            state.channels.forEach(ch => {
+                if (ch.category && ch.category !== 'Altri') categories.add(ch.category);
+            });
+            state.categories = new Set(['Tutti', 'Preferiti', ...Array.from(categories).sort()]);
+            renderCategoryPills();
+            renderDrawer();
+            renderSettings(); // Ensure settings are synced with loaded channels/sources
+        }
+        
+        function reloadSources() {
+            document.getElementById('refresh-menu').classList.add('hidden');
+            loadChannels(true);
+        }
+
+        function parseM3U(raw, sourceInfo) {
+            const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+            let results = [], current = {};
+            lines.forEach(l => {
+                l = l.trim();
+                if (!l) return;
+                if (l.startsWith('#EXTINF:')) {
+                    const infoParts = l.split(',');
+                    current.name = infoParts[infoParts.length - 1].trim();
+                    const logoMatch = l.match(/tvg-logo="([^"]+)"/);
+                    current.logo = logoMatch ? logoMatch[1] : "";
+                    const groupMatch = l.match(/group-title="([^"]+)"/i);
+                    current.category = groupMatch ? groupMatch[1].trim() : 'Altri';
+                } else if (!l.startsWith('#')) {
+                    if (current.name) {
+                        current.url = l;
+                        results.push({...current});
+                        current = {};
+                    }
+                }
+            });
+            return results;
+        }
+        
+        // UPDATED SCREENSHOT FUNCTION WITH WATERMARK SUPPORT
+        function captureScreenshot() {
+            const v = document.getElementById('main-video');
+            if(!v) return;
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = v.videoWidth;
+                canvas.height = v.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                
+                // Watermark Logic
+                if(state.visuals.wmScreenshot) {
+                    const wmImg = document.getElementById('player-watermark');
+                    if(wmImg && wmImg.complete) {
+                        const wmScale = state.visuals.wmScale / 100;
+                        const wmOp = state.visuals.wmOpacity;
+                        
+                        // Relative sizing (adjust base size as needed)
+                        const w = wmImg.naturalWidth * wmScale;
+                        const h = wmImg.naturalHeight * wmScale;
+                        
+                        // Position (top-right with padding relative to canvas size)
+                        const padX = canvas.width * 0.05; 
+                        const padY = canvas.height * 0.05;
+                        const x = canvas.width - w - padX;
+                        const y = padY;
+                        
+                        ctx.globalAlpha = wmOp;
+                        ctx.drawImage(wmImg, x, y, w, h);
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
+
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `screenshot_${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            } catch (e) { alert("Errore cattura screenshot (DRM protetto o CORS?) " + e); }
+        }
+
+        async function playChannel(ch, sourceIndex = null, isRetry = false) {
+            state.current = ch;
+            if (sourceIndex === null) {
+                const prefs = state.channelPrefs[ch.id];
+                if (prefs) {
+                    sourceIndex = prefs.source;
+                    if (prefs.engine) state.engine = prefs.engine;
+                } else {
+                    sourceIndex = 0;
+                    state.engine = 'auto'; 
+                }
+            }
+            if (sourceIndex >= ch.urls.length) sourceIndex = 0;
+            state.currentSourceIndex = sourceIndex;
+
+            // NO SIGNAL & RETRY LOGIC START
+            if (!isRetry) {
+                // Se non è un retry, puliamo lo stato precedente
+                clearTimeout(signalTimer);
+                clearInterval(retryTimer);
+                retryTimer = null;
+                document.getElementById('no-signal-overlay').classList.add('hidden');
+                document.getElementById('no-signal-video').pause();
+                
+                // Impostiamo il timer per il No Signal (4.5 secondi)
+                signalTimer = setTimeout(() => {
+                    console.log("Signal timeout reached. Showing No Signal.");
+                    const nsOverlay = document.getElementById('no-signal-overlay');
+                    const nsVideo = document.getElementById('no-signal-video');
+                    nsOverlay.classList.remove('hidden');
+                    nsVideo.play().catch(e => console.log("No signal video play failed", e));
+                    
+                    // Avvia il loop di controllo in background
+                    if (!retryTimer) {
+                        retryTimer = setInterval(() => {
+                            console.log("Background check: retrying channel...");
+                            playChannel(ch, sourceIndex, true);
+                        }, 5000);
+                    }
+                }, 4500);
+            }
+            // END NO SIGNAL LOGIC
+
+            const url = ch.urls[sourceIndex];
+            
+            const nameEl = document.getElementById('display-name');
+            if (nameEl) {
+                const lcnPrefix = (ch.lcn && ch.lcn < 1000) ? `<span class="text-blue-500 mr-4 font-mono">${ch.lcn}</span>` : '';
+                nameEl.innerHTML = `${lcnPrefix}${ch.name}`;
+            }
+            const catEl = document.getElementById('current-category-badge');
+            if (catEl) catEl.innerText = ch.category;
+
+            const logoContent = document.getElementById('logo-content');
+            const glowBg = document.getElementById('glow-background');
+
+            if (logoContent && glowBg) {
+                if (ch.logo) {
+                    logoContent.innerHTML = `<img src="${ch.logo}" class="w-full h-full object-contain p-4 relative z-10">`;
+                    glowBg.style.backgroundImage = `url('${ch.logo}')`;
+                } else {
+                    logoContent.innerHTML = '<i data-lucide="tv-2" class="w-10 h-10 text-white/10"></i>';
+                    glowBg.style.backgroundImage = 'none';
+                }
+            }
+
+            const favBtn = document.getElementById('current-fav-btn');
+            if (favBtn) favBtn.classList.toggle('text-yellow-500', state.favorites.includes(ch.id));
+            
+            renderSourceButtons();
+            
+            const video = document.getElementById('main-video');
+            if (playerHls) { playerHls.destroy(); playerHls = null; }
+            if (playerDash) { playerDash.reset(); playerDash = null; }
+            if (playerShaka) { await playerShaka.destroy(); playerShaka = null; }
+            
+            // Non resettare src se è un retry background per evitare sfarfallii se possibile,
+            // ma per riprovare serve ricaricare.
+            video.pause(); video.removeAttribute('src'); video.load();
+
+            const drmData = state.drm[ch.id];
+            document.getElementById('btn-drm-trigger').classList.toggle('hidden', !drmData);
+            document.getElementById('decoder-badge').classList.toggle('hidden', !drmData);
+
+            // Success Handler per cancellare il No Signal
+            const onPlaySuccess = () => {
+                console.log("Signal detected! Clearing No Signal overlay.");
+                clearTimeout(signalTimer);
+                clearInterval(retryTimer);
+                retryTimer = null;
+                document.getElementById('no-signal-overlay').classList.add('hidden');
+                document.getElementById('no-signal-video').pause();
+                video.removeEventListener('playing', onPlaySuccess);
+            };
+            video.addEventListener('playing', onPlaySuccess, { once: true });
+
+            let eng = state.engine;
+            
+            if (eng === 'auto') {
+                if (drmData) eng = 'shaka';
+                else if (url.includes('.mpd')) eng = 'shaka';
+                else if (url.includes('.m3u8')) eng = 'hls';
+                else eng = 'native';
+            }
+
+            try {
+                if (eng === 'shaka') {
+                    playerShaka = new shaka.Player(video);
+                    if (drmData) playerShaka.configure({ drm: { clearKeys: { [drmData.kid]: drmData.key } } });
+                    await playerShaka.load(url);
+                } else if (eng === 'hls' && Hls.isSupported()) {
+                    playerHls = new Hls();
+                    playerHls.loadSource(url);
+                    playerHls.attachMedia(video);
+                } else if (eng === 'dash') {
+                    playerDash = dashjs.MediaPlayer().create();
+                    playerDash.initialize(video, url, true);
+                } else { video.src = url; }
+                await video.play();
+            } catch (e) { 
+                console.error("Playback error:", e);
+                // Non facciamo nulla qui, lasciamo che scatti il timeout o che continui il retry
+            }
+
+            updateEngineUI(state.engine);
+            saveChannelPrefs(ch.id, state.engine, sourceIndex);
+
+            const playBtn = document.getElementById('play-pause-btn');
+            if(playBtn) playBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6 fill-current relative z-10"></i>';
+            lucide.createIcons();
+            showUi();
+        }
+
+        function renderSourceButtons() {
+            const container = document.getElementById('source-switches');
+            container.innerHTML = '';
+            if (state.current && state.current.urls.length > 1) {
+                state.current.urls.forEach((_, idx) => {
+                    const btn = document.createElement('button');
+                    const isActive = idx === state.currentSourceIndex;
+                    btn.className = `w-8 h-8 rounded-lg text-[10px] font-black border flex items-center justify-center transition-all shrink-0 ${isActive ? 'source-btn-active' : 'bg-white/5 border-white/10 text-white/50 hover:text-white'}`;
+                    btn.innerText = idx + 1;
+                    btn.onclick = (e) => { e.stopPropagation(); playChannel(state.current, idx); };
+                    container.appendChild(btn);
+                });
+            }
+        }
+
+        function triggerPiP() {
+            if (video && !video.paused && document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+                video.requestPictureInPicture().catch(err => console.log("PiP failed", err));
+            }
+        }
+
+        function toggleFullScreen() {
+            const container = document.getElementById('view-live'); 
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('-translate-x-full');
+            if (!sb.classList.contains('-translate-x-full')) {
+                if(state.isUnlocked) document.getElementById('btn-admin-reopen').classList.remove('hidden');
+            }
+        }
+        
+        function toggleDrawer() { document.getElementById('channel-drawer').classList.toggle('translate-x-full'); showUi(); }
+        
+        function showTab(t) { 
+            const isDesktop = window.innerWidth >= 1024;
+            
+            if (t === 'settings') {
+                renderSettings(); // Ensure textarea is updated when tab is shown
+                
+                if (isDesktop) {
+                    if (document.fullscreenElement) document.exitFullscreen();
+                    document.getElementById('view-live').classList.add('desktop-split-view');
+                    document.getElementById('view-settings').classList.remove('hidden');
+                    const wrapper = document.getElementById('player-wrapper');
+                    const settings = document.getElementById('view-settings');
+                    wrapper.style.width = '50%';
+                    settings.style.width = '50%';
+                    requestAnimationFrame(() => {
+                        settings.style.opacity = '1';
+                        settings.style.transform = 'translateX(0)';
+                    });
+
+                } else {
+                    if(video && !video.paused) {
+                        if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+                            video.requestPictureInPicture().catch(e => console.log("PiP failed", e));
+                        }
+                    }
+                    document.getElementById('view-settings').classList.remove('hidden');
+                    document.getElementById('view-settings').classList.remove('settings-ghost');
+                    anime({
+                        targets: '#view-settings',
+                        opacity: [0, 1],
+                        translateY: [20, 0],
+                        easing: 'easeOutExpo',
+                        duration: 400
+                    });
+                }
+            } else {
+                if (isDesktop) {
+                    document.getElementById('view-live').classList.remove('desktop-split-view');
+                    const wrapper = document.getElementById('player-wrapper');
+                    wrapper.style.width = '100%'; 
+                    setTimeout(() => {
+                        document.getElementById('view-settings').classList.add('hidden');
+                        document.getElementById('view-settings').style.transform = '';
+                    }, 600);
+                } else {
+                    document.getElementById('view-settings').classList.add('hidden');
+                }
+            }
+            if(!document.getElementById('sidebar').classList.contains('-translate-x-full')) toggleSidebar();
+        }
+
+        function initSplitResizer() {
+            const resizer = document.getElementById('split-resizer');
+            const wrapper = document.getElementById('player-wrapper');
+            const settings = document.getElementById('view-settings');
+            const container = document.getElementById('view-live');
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                resizer.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const containerRect = container.getBoundingClientRect();
+                const pointerX = e.clientX - containerRect.left;
+                const minW = containerRect.width * 0.2;
+                const maxW = containerRect.width * 0.8;
+                if (pointerX > minW && pointerX < maxW) {
+                    const settingsW = (pointerX / containerRect.width) * 100;
+                    const wrapperW = 100 - settingsW;
+                    settings.style.width = `${settingsW}%`;
+                    wrapper.style.width = `${wrapperW}%`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if(isResizing) {
+                    isResizing = false;
+                    resizer.classList.remove('resizing');
+                    document.body.style.cursor = 'default';
+                }
+            });
+
+            const playerObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (entry.contentRect.width < 700) {
+                        document.body.classList.add('mobile-layout-force');
+                    } else {
+                        document.body.classList.remove('mobile-layout-force');
+                    }
+                }
+            });
+            playerObserver.observe(wrapper);
+        }
+
+        function startUiTimer() {
+            clearTimeout(state.uiTimeout);
+            state.uiTimeout = setTimeout(() => {
+                if (!state.isMouseOverControls) {
+                    state.isUiVisible = false;
+                    document.getElementById('main-content').classList.add('ui-hidden');
+                    document.getElementById('video-touch-zone').style.cursor = 'none';
+                    document.getElementById('engine-menu').classList.add('hidden');
+                    document.getElementById('refresh-menu').classList.add('hidden');
+                }
+            }, 2000); 
+        }
+
+        function showUi() {
+            clearTimeout(state.uiTimeout);
+            if (!state.isUiVisible) {
+                state.isUiVisible = true;
+                document.getElementById('main-content').classList.remove('ui-hidden');
+                document.getElementById('video-touch-zone').style.cursor = 'default';
+            }
+            if (!video.paused && document.getElementById('channel-drawer').classList.contains('translate-x-full')) {
+                if (!state.isMouseOverControls) {
+                    startUiTimer();
+                }
+            }
+        }
+
+        function toggleFavorite(id, e) {
+            if(e) e.stopPropagation();
+            const idx = state.favorites.indexOf(id);
+            if(idx > -1) state.favorites.splice(idx, 1);
+            else state.favorites.push(id);
+            localStorage.setItem('kyi_favs', JSON.stringify(state.favorites));
+            if(state.current && state.current.id === id) document.getElementById('current-fav-btn').classList.toggle('text-yellow-500', state.favorites.includes(id));
+            renderDrawer();
+        }
+
+        function toggleFavoriteCurrent() { if(!state.current) return; toggleFavorite(state.current.id); }
+
+        function setDrawerMainTab(tab) {
+            state.drawerTab = tab;
+            state.activeListId = null; 
+            document.getElementById('tab-main-channels').classList.toggle('tab-glass-active', tab === 'channels');
+            document.getElementById('tab-main-channels').classList.toggle('text-white/40', tab !== 'channels');
+            document.getElementById('tab-main-lists').classList.toggle('tab-glass-active', tab === 'lists');
+            document.getElementById('tab-main-lists').classList.toggle('text-white/40', tab !== 'lists');
+
+            if(tab === 'channels') {
+                document.getElementById('view-channels-controls').classList.remove('hidden');
+                document.getElementById('view-lists-controls').classList.add('hidden');
+                renderCategoryPills();
+            } else {
+                document.getElementById('view-channels-controls').classList.add('hidden');
+                document.getElementById('view-lists-controls').classList.remove('hidden');
+            }
+            renderDrawer();
+        }
+
+        function renderCategoryPills() {
+            const container = document.getElementById('category-pills');
+            container.innerHTML = '';
+            state.categories.forEach(cat => {
+                const isActive = state.activeCategory === cat;
+                const btn = document.createElement('button');
+                btn.className = `category-btn hover-text-darkgrey px-4 py-2 rounded-lg text-[10px] font-black uppercase whitespace-nowrap border transition-all ${isActive ? 'category-active' : 'bg-white/5 border-white/10 text-white/50 hover:text-white'} dyn-radius-btn`;
+                btn.innerText = cat;
+                btn.onclick = (e) => { e.stopPropagation(); state.activeCategory = cat; renderCategoryPills(); renderDrawer(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderDrawer() {
+            const list = document.getElementById('drawer-list');
+            list.innerHTML = '';
+
+            if (state.drawerTab === 'channels') {
+                const search = document.getElementById('channel-search').value.toLowerCase();
+                let filtered = state.channels.filter(c => c.name.toLowerCase().includes(search));
+                if (state.activeCategory === 'Preferiti') filtered = filtered.filter(c => state.favorites.includes(c.id));
+                else if (state.activeCategory !== 'Tutti') filtered = filtered.filter(c => c.category === state.activeCategory);
+
+                if(filtered.length === 0) { list.innerHTML = '<div class="text-center text-white/20 text-xs py-10 uppercase italic">Nessun canale trovato</div>'; return; }
+                filtered.forEach(ch => renderChannelItem(ch, list));
+            } else {
+                if (state.activeListId === null) {
+                    if(state.customLists.length === 0) { list.innerHTML = '<div class="text-center text-white/20 text-xs py-10 uppercase italic">Nessuna lista creata</div>'; return; }
+                    state.customLists.forEach(l => {
+                        const div = document.createElement('div');
+                        div.className = "flex items-center justify-between p-4 glass-panel rounded-2xl border border-white/5 hover:bg-white/5 cursor-pointer transition-all dyn-radius-panel";
+                        div.innerHTML = `
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-500"><i data-lucide="list" class="w-5 h-5"></i></div>
+                                <div><h3 class="text-xs font-black uppercase text-white">${l.name}</h3><p class="text-[9px] text-white/40 font-mono">${l.channelIds.length} Canali</p></div>
+                            </div>
+                            <div class="flex items-center gap-2"><button onclick="deleteCustomList('${l.id}', event)" class="p-2 text-white/20 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button><i data-lucide="chevron-right" class="w-4 h-4 text-white/20"></i></div>
+                        `;
+                        div.onclick = (e) => { if(!e.target.closest('button')) { e.stopPropagation(); state.activeListId = l.id; renderDrawer(); }};
+                        list.appendChild(div);
+                    });
+                } else {
+                    const activeList = state.customLists.find(l => l.id === state.activeListId);
+                    if(!activeList) { state.activeListId = null; renderDrawer(); return; }
+                    const header = document.createElement('div');
+                    header.className = "flex items-center gap-2 mb-4 pb-4 border-b border-white/5";
+                    header.innerHTML = `<button onclick="event.stopPropagation(); state.activeListId = null; renderDrawer()" class="p-2 bg-white/5 rounded-lg text-white/50 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><span class="text-xs font-black uppercase text-white italic">${activeList.name}</span>`;
+                    list.appendChild(header);
+                    const listChannels = state.channels.filter(c => activeList.channelIds.includes(c.id));
+                    if(listChannels.length === 0) list.innerHTML += '<div class="text-center text-white/20 text-xs py-10 uppercase italic">Lista vuota</div>';
+                    else listChannels.forEach(ch => renderChannelItem(ch, list, true)); 
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function renderChannelItem(ch, container, isRemovableFromList = false) {
+            const isSelected = state.current?.id === ch.id;
+            const isFav = state.favorites.includes(ch.id);
+            const div = document.createElement('div');
+            div.className = `flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-transparent dyn-radius-input ${isSelected ? 'bg-blue-600/20 border-blue-500/30' : 'hover:bg-white/5'}`;
+            let actionBtn = isRemovableFromList ? 
+                `<button onclick="removeFromCurrentList('${ch.id}', event)" class="p-2 text-white/20 hover:text-red-500 transition-colors"><i data-lucide="minus-circle" class="w-4 h-4"></i></button>` :
+                `<button onclick="toggleFavorite('${ch.id}', event)" class="p-2 transition-colors ${isFav ? 'text-yellow-500' : 'text-white/10 hover:text-yellow-500'}"><i data-lucide="star" class="w-4 h-4 ${isFav ? 'fill-current' : ''}"></i></button>`;
+
+            const nameColorClass = isRemovableFromList ? 'text-white' : (isSelected ? 'text-blue-500' : 'text-white/60');
+            const lcnBadge = (ch.lcn && ch.lcn < 1000) ? `<span class="min-w-[1.5rem] text-center text-[9px] font-mono font-bold text-white/30 border border-white/10 rounded px-1">${ch.lcn}</span>` : '';
+
+            div.innerHTML = `
+                ${lcnBadge}
+                <div class="w-10 h-7 bg-black rounded flex items-center justify-center overflow-hidden border border-white/5 shrink-0">${ch.logo ? `<img src="${ch.logo}" class="w-full h-full object-contain">` : '<i data-lucide="tv" class="w-3 h-3 opacity-20"></i>'}</div>
+                <div class="flex-1 min-w-0 flex flex-col"><span class="text-[10px] font-black uppercase truncate italic block ${nameColorClass}">${ch.name}</span><span class="text-[8px] text-white/30 truncate">${ch.category}</span></div>
+                ${ch.urls.length > 1 ? `<span class="bg-white/10 text-[8px] px-1.5 rounded text-white/50">${ch.urls.length}</span>` : ''}
+                ${actionBtn}
+            `;
+            div.addEventListener('click', (e) => { e.stopPropagation(); if(!e.target.closest('button')) playChannel(ch); });
+            container.appendChild(div);
+        }
+
+        function handleGlobalKeydown(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const key = e.key;
+            if (/^\d$/.test(key)) {
+                state.lcnBuffer += key;
+                updateLcnOverlay();
+                resetLcnTimeout();
+            } else if (key === 'Enter') {
+                if(state.lcnBuffer.length > 0) { clearTimeout(state.lcnTimeout); finalizeLcnSelection(); }
+            } else if (key === 'Backspace') {
+                state.lcnBuffer = state.lcnBuffer.slice(0, -1);
+                updateLcnOverlay();
+                if(state.lcnBuffer.length > 0) resetLcnTimeout();
+            }
+            state.unlockSeq = (state.unlockSeq + key.toLowerCase()).slice(-6);
+            if(state.unlockSeq === 'unlock') { state.isUnlocked = true; toggleSidebar(); document.getElementById('btn-admin-reopen').classList.remove('hidden'); }
+        }
+
+        function updateLcnOverlay() {
+            const overlay = document.getElementById('lcn-overlay');
+            const display = document.getElementById('lcn-display');
+            if (state.lcnBuffer.length > 0) { overlay.style.opacity = '1'; overlay.style.transform = 'scale(1)'; display.innerText = state.lcnBuffer; } 
+            else { overlay.style.opacity = '0'; overlay.style.transform = 'scale(0.9)'; }
+        }
+
+        function resetLcnTimeout() {
+            clearTimeout(state.lcnTimeout);
+            let waitTime = 3500;
+            if (state.lcnBuffer.length >= 4) finalizeLcnSelection();
+            else state.lcnTimeout = setTimeout(finalizeLcnSelection, waitTime);
+        }
+
+        function finalizeLcnSelection() {
+            const lcn = parseInt(state.lcnBuffer);
+            state.lcnBuffer = '';
+            updateLcnOverlay();
+            if (!isNaN(lcn)) {
+                const overrideId = state.lcnOverrides[lcn];
+                if (overrideId) {
+                    const ch = state.channels.find(c => c.id === overrideId);
+                    if(ch) { playChannel(ch); return; }
+                }
+                const matches = state.channels.filter(c => c.lcn === lcn);
+                if (matches.length === 1) {
+                    playChannel(matches[0]);
+                } else if (matches.length > 1) {
+                    showLcnConflictModal(lcn, matches);
+                } else {
+                    const display = document.getElementById('display-name');
+                    const originalText = display.innerText;
+                    display.innerText = `Canale ${lcn} non trovato`;
+                    display.classList.add('text-red-500');
+                    setTimeout(() => { display.innerText = originalText; display.classList.remove('text-red-500'); }, 2000);
+                }
+            }
+        }
+
+        function showLcnConflictModal(lcn, matches) {
+            document.getElementById('lcn-conflict-number').innerText = lcn;
+            const container = document.getElementById('lcn-conflict-list');
+            container.innerHTML = '';
+            const checkbox = document.getElementById('lcn-remember-check');
+            if(checkbox) checkbox.checked = false;
+
+            matches.forEach(ch => {
+                const btn = document.createElement('button');
+                btn.className = "w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all text-left";
+                btn.innerHTML = `
+                    <div class="w-8 h-8 rounded bg-black flex items-center justify-center overflow-hidden border border-white/5">
+                        ${ch.logo ? `<img src="${ch.logo}" class="w-full h-full object-contain">` : '<i data-lucide="tv" class="w-3 h-3 text-white/20"></i>'}
+                    </div>
+                    <span class="flex-1 text-[10px] font-black uppercase text-white">${ch.name}</span>
+                    <i data-lucide="play" class="w-3 h-3 text-white/30"></i>
+                `;
+                btn.onclick = () => {
+                    if(checkbox && checkbox.checked) {
+                        state.lcnOverrides[lcn] = ch.id;
+                        localStorage.setItem('kyi_lcn_overrides', JSON.stringify(state.lcnOverrides));
+                    }
+                    playChannel(ch);
+                    document.getElementById('modal-lcn-conflict').classList.add('hidden');
+                };
+                container.appendChild(btn);
+            });
+            document.getElementById('modal-lcn-conflict').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function openCreateListModal() { document.getElementById('new-list-name').value = ''; document.getElementById('modal-create-list').classList.remove('hidden'); }
+        function createCustomList() {
+            const name = document.getElementById('new-list-name').value.trim();
+            if(!name) return;
+            state.customLists.push({ id: 'list_' + Date.now(), name: name, channelIds: [] });
+            localStorage.setItem('kyi_custom_lists', JSON.stringify(state.customLists));
+            document.getElementById('modal-create-list').classList.add('hidden');
+            renderDrawer();
+        }
+        function deleteCustomList(id, e) {
+            if(e) e.stopPropagation();
+            if(!confirm("Eliminare questa lista?")) return;
+            state.customLists = state.customLists.filter(l => l.id !== id);
+            localStorage.setItem('kyi_custom_lists', JSON.stringify(state.customLists));
+            renderDrawer();
+        }
+        function removeFromCurrentList(chId, e) {
+            if(e) e.stopPropagation();
+            const listIdx = state.customLists.findIndex(l => l.id === state.activeListId);
+            if(listIdx === -1) return;
+            state.customLists[listIdx].channelIds = state.customLists[listIdx].channelIds.filter(id => id !== chId);
+            localStorage.setItem('kyi_custom_lists', JSON.stringify(state.customLists));
+            renderDrawer();
+        }
+        function openAddToListModal() {
+            if(!state.current) return;
+            const container = document.getElementById('add-to-list-container');
+            container.innerHTML = '';
+            if(state.customLists.length === 0) { container.innerHTML = '<div class="text-center text-white/50 text-xs p-4">Nessuna lista creata.<br>Creane una dal menù laterale.</div>'; } 
+            else {
+                state.customLists.forEach(l => {
+                    const isPresent = l.channelIds.includes(state.current.id);
+                    const btn = document.createElement('button');
+                    btn.className = `w-full p-4 rounded-xl flex items-center justify-between border transition-all dyn-radius-input ${isPresent ? 'bg-blue-600/20 border-blue-500 text-blue-500' : 'bg-white/5 border-white/5 text-white hover:bg-white/10'}`;
+                    btn.innerHTML = `<span class="text-xs font-black uppercase">${l.name}</span>${isPresent ? '<i data-lucide="check" class="w-4 h-4"></i>' : '<i data-lucide="plus" class="w-4 h-4 opacity-50"></i>'}`;
+                    btn.onclick = () => toggleChannelInList(l.id);
+                    container.appendChild(btn);
+                });
+            }
+            document.getElementById('modal-add-to-list').classList.remove('hidden');
+            lucide.createIcons();
+        }
+        function toggleChannelInList(listId) {
+            const list = state.customLists.find(l => l.id === listId);
+            if(!list || !state.current) return;
+            if(list.channelIds.includes(state.current.id)) list.channelIds = list.channelIds.filter(id => id !== state.current.id);
+            else list.channelIds.push(state.current.id);
+            localStorage.setItem('kyi_custom_lists', JSON.stringify(state.customLists));
+            openAddToListModal(); if(state.drawerTab === 'lists' && state.activeListId === listId) renderDrawer();
+        }
+
+        function setEngine(e) { 
+            state.engine = e; 
+            document.getElementById('engine-menu').classList.add('hidden'); 
+            if(state.current) playChannel(state.current, state.currentSourceIndex);
+        }
+        function updateEngineUI(e) { document.getElementById('current-engine-label').innerText = e.toUpperCase(); document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('engine-active')); document.getElementById(`btn-engine-${e}`)?.classList.add('engine-active'); }
+        function toggleRefreshMenu(e) { e.stopPropagation(); document.getElementById('refresh-menu').classList.toggle('hidden'); }
+        function togglePiP() { if (document.pictureInPictureElement) document.exitPictureInPicture(); else if (document.pictureInPictureEnabled) video.requestPictureInPicture(); }
+
+        function renderSettings() {
+            const ta = document.getElementById('bulk-sources-input');
+            // Always map from the current state which is loaded from localStorage on init
+            const urls = state.sources.map(s => s.url);
+            ta.value = urls.join(',\n');
+            lucide.createIcons();
+            updateVisualsUI();
+        }
+
+        function saveBulkSources() {
+            const ta = document.getElementById('bulk-sources-input');
+            const raw = ta.value;
+            const urls = raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+            state.sources = urls.map((url, idx) => ({ url: url, label: `List ${idx + 1}`, color: colors[idx % colors.length] }));
+            localStorage.setItem('kyi_sources_v3', JSON.stringify(state.sources));
+            location.reload(); 
+        }
+        
+        function initVisualSliders() {
+            const settingsView = document.getElementById('view-settings');
+            const handleGhostStart = () => { settingsView.classList.add('settings-ghost'); };
+            const handleGhostEnd = () => { settingsView.classList.remove('settings-ghost'); };
+            
+            const bindControl = (id, prop, scale = 1, type = 'slider') => {
+                const el = document.getElementById(id);
+                if(!el) return;
+                
+                el.addEventListener('input', (e) => {
+                    let val = e.target.value;
+                    if(type === 'slider') val = parseFloat(val) / scale;
+                    else if(type === 'checkbox') val = e.target.checked;
+                    state.visuals[prop] = val;
+                    applyVisualSettings();
+                    localStorage.setItem('kyi_visuals', JSON.stringify(state.visuals));
+                });
+                
+                if(type === 'slider') {
+                    el.addEventListener('pointerdown', handleGhostStart);
+                    el.addEventListener('pointerup', handleGhostEnd);
+                }
+            };
+            
+            bindControl('in-body-bg', 'bodyBg', 1, 'color');
+            bindControl('in-text-color', 'textColor', 1, 'color');
+            bindControl('in-accent-color', 'accentColor', 1, 'color');
+            
+            bindControl('in-glass-r', 'glassR', 1, 'slider');
+            bindControl('in-glass-g', 'glassG', 1, 'slider');
+            bindControl('in-glass-b', 'glassB', 1, 'slider');
+            bindControl('in-glass-alpha', 'glassAlpha', 100, 'slider');
+            bindControl('in-glass-blur', 'glassBlur', 1, 'slider');
+
+            bindControl('in-btn-bg-color', 'btnBgColor', 1, 'color');
+            bindControl('in-btn-bg-alpha', 'btnBgAlpha', 100, 'slider');
+            bindControl('in-btn-border-color', 'btnBorderColor', 1, 'color');
+            bindControl('in-btn-border-alpha', 'btnBorderAlpha', 100, 'slider');
+            bindControl('in-btn-hover-bg', 'btnHoverBg', 1, 'color');
+            bindControl('in-btn-hover-alpha', 'btnHoverAlpha', 100, 'slider');
+
+            bindControl('in-vignette-color', 'vignetteColor', 1, 'color');
+            bindControl('in-vignette-alpha', 'vignetteAlpha', 100, 'slider');
+            bindControl('in-vignette-start', 'vignetteStart', 1, 'slider');
+            bindControl('in-vignette-end', 'vignetteEnd', 1, 'slider');
+
+            // Watermark Bindings
+            bindControl('in-wm-bg-color', 'wmBgColor', 1, 'color');
+            bindControl('in-wm-bg-alpha', 'wmBgAlpha', 100, 'slider');
+            bindControl('in-wm-opacity', 'wmOpacity', 100, 'slider'); // Scale 100
+            bindControl('in-wm-scale', 'wmScale', 1, 'slider');
+            bindControl('in-wm-blur', 'wmBlur', 1, 'slider');
+            bindControl('in-wm-screenshot', 'wmScreenshot', 1, 'checkbox');
+
+            // Loader Bindings
+            bindControl('in-loader-scale', 'loaderLogoScale', 1, 'slider');
+            bindControl('in-loader-opacity', 'loaderLogoOpacity', 100, 'slider');
+        }
+        
+        function setupLongPress(element, callback, duration = 3000) {
+            let timer;
+            const start = (e) => {
+                if(e.type === 'touchstart') e.stopPropagation(); 
+                timer = setTimeout(() => { callback(); navigator.vibrate?.(50); }, duration);
+            };
+            const clear = () => { clearTimeout(timer); };
+            element.addEventListener('mousedown', start);
+            element.addEventListener('touchstart', start, {passive: true});
+            element.addEventListener('mouseup', clear);
+            element.addEventListener('touchend', clear);
+            element.addEventListener('mouseleave', clear);
+        }
+
+        (function setupGestures() {
+            let startY = 0;
+            let startX = 0;
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 3) { startY = e.touches[0].clientY; startX = e.touches[0].clientX; }
+            }, {passive: true});
+            document.addEventListener('touchend', (e) => {
+                if (startY > 0) {
+                    const endY = e.changedTouches[0].clientY;
+                    const deltaY = startY - endY; 
+                    if (deltaY > 100) {
+                        state.isUnlocked = true;
+                        document.getElementById('btn-admin-reopen').classList.remove('hidden');
+                        showTab('settings');
+                        if(navigator.vibrate) navigator.vibrate(50);
+                    }
+                    startY = 0;
+                }
+            }, {passive: true});
+        })();
+
+        setupLongPress(document.getElementById('play-pause-btn'), () => {
+            if(!state.isUnlocked) {
+                state.isUnlocked = true;
+                const btn = document.getElementById('btn-admin-reopen');
+                btn.classList.remove('hidden');
+                anime({ targets: btn, scale: [0, 1], opacity: [0, 1], duration: 500, easing: 'easeOutElastic(1, .8)' });
+            }
+        });
+
+        setupLongPress(document.getElementById('btn-admin-reopen'), () => {
+            if(state.isUnlocked) {
+                state.isUnlocked = false;
+                const btn = document.getElementById('btn-admin-reopen');
+                anime({
+                    targets: btn, scale: 0, opacity: 0, duration: 300, easing: 'easeInBack',
+                    complete: () => { btn.classList.add('hidden'); btn.style.transform = ''; btn.style.opacity = ''; }
+                });
+                const sb = document.getElementById('sidebar');
+                if(!sb.classList.contains('-translate-x-full')) toggleSidebar();
+            }
+        });
+
+        function openDrmModal() {
+            const d = state.drm[state.current.id] || {kid:'', key:''};
+            document.getElementById('drm-kid').value = d.kid;
+            document.getElementById('drm-key').value = d.key;
+            document.getElementById('modal-drm').classList.remove('hidden');
+        }
+        function closeDrmModal() { document.getElementById('modal-drm').classList.add('hidden'); }
+        function saveDrmKey() {
+            const kid = document.getElementById('drm-kid').value.trim();
+            const key = document.getElementById('drm-key').value.trim();
+            if(kid && key) state.drm[state.current.id] = {kid, key};
+            else delete state.drm[state.current.id];
+            localStorage.setItem('kyi_drm', JSON.stringify(state.drm));
+            closeDrmModal();
+            playChannel(state.current, state.currentSourceIndex);
+        }
+
+        function exportData() {
+            const d = { 
+                favs: state.favorites, sources: state.sources, drm: state.drm, lists: state.customLists, visuals: state.visuals, randomStart: state.playRandomOnStart, channelPrefs: state.channelPrefs
+            };
+            const blob = new Blob([JSON.stringify(d)], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kyi_backup_v6.0.json`; a.click();
+        }
+
+        function importData(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const data = JSON.parse(ev.target.result);
+                localStorage.setItem('kyi_favs', JSON.stringify(data.favs || []));
+                localStorage.setItem('kyi_sources_v3', JSON.stringify(data.sources || []));
+                localStorage.setItem('kyi_drm', JSON.stringify(data.drm || {}));
+                localStorage.setItem('kyi_custom_lists', JSON.stringify(data.lists || []));
+                localStorage.setItem('kyi_random_start', JSON.stringify(data.randomStart || false));
+                if(data.channelPrefs) localStorage.setItem('kyi_channel_prefs', JSON.stringify(data.channelPrefs));
+                if(data.visuals) localStorage.setItem('kyi_visuals', JSON.stringify(data.visuals));
+                location.reload();
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        // --- NEW DRAG LOGIC ---
+        function makeDraggable(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = elmnt.querySelector('.draggable-header');
+            if (header) {
+                header.onmousedown = dragMouseDown;
+                header.ontouchstart = dragMouseDown;
+            }
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                // e.preventDefault(); 
+                if(e.type === 'touchstart') {
+                    pos3 = e.touches[0].clientX;
+                    pos4 = e.touches[0].clientY;
+                } else {
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                }
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                let clientX, clientY;
+                if(e.type === 'touchmove') {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                pos1 = pos3 - clientX;
+                pos2 = pos4 - clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                elmnt.style.transform = "none";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+            }
+        }
+
+        document.getElementById('video-touch-zone').addEventListener('mousemove', showUi);
+        document.getElementById('video-touch-zone').addEventListener('click', () => { if (!state.isUiVisible) showUi(); });
+        document.getElementById('btn-engine-toggle').onclick = (e) => { e.stopPropagation(); document.getElementById('engine-menu').classList.toggle('hidden'); };
+        document.getElementById('play-pause-btn').onclick = (e) => { e.stopPropagation(); if(video.paused) { video.play(); document.getElementById('play-pause-btn').innerHTML = '<i data-lucide="pause" class="w-6 h-6 fill-current relative z-10"></i>'; } else { video.pause(); document.getElementById('play-pause-btn').innerHTML = '<i data-lucide="play" class="w-6 h-6 fill-current relative z-10"></i>'; } lucide.createIcons(); showUi(); };
+        document.getElementById('volume-slider').oninput = (e) => { video.volume = e.target.value / 100; showUi(); };
+        document.getElementById('channel-search').oninput = renderDrawer;
+
+        shaka.polyfill.installAll();
+        init();
+
+        (function setupInteractions() {
+            const touchZone = document.getElementById('video-touch-zone');
+            const drawer = document.getElementById('channel-drawer');
+            const uiLayer = document.getElementById('player-ui-layer');
+
+            let lastTap = 0;
+            touchZone.addEventListener('dblclick', (e) => { e.preventDefault(); toggleFullScreen(); });
+            touchZone.addEventListener('touchend', (e) => { const now = Date.now(); if (now - lastTap < 300) { e.preventDefault(); toggleFullScreen(); } lastTap = now; });
+            
+            uiLayer.addEventListener('mouseenter', () => { state.isMouseOverControls = true; showUi(); });
+            uiLayer.addEventListener('mouseleave', () => { state.isMouseOverControls = false; showUi(); });
+            uiLayer.addEventListener('touchend', () => { setTimeout(() => { state.isMouseOverControls = false; }, 1000); }, {passive: true});
+            uiLayer.addEventListener('touchstart', () => { showUi(); }, {passive: true});
+
+            const handleOutside = (e) => { if (drawer.classList.contains('translate-x-full')) return; if (drawer.contains(e.target) || e.target.closest('#btn-toggle-drawer')) return; if (e.target.closest('.fixed.inset-0.z-\\[2500\\]')) return; toggleDrawer(); };
+            document.addEventListener('click', handleOutside);
+            document.addEventListener('touchstart', handleOutside);
+        })();
+    </script>
 </body>
 </html>
