@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="https://killyouridol.altervista.org/img/favicon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#000000">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>KillYourIdol v6.0 Ultimate</title>
+    
+    <!-- External Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    
+    <!-- Video Engines -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex overflow-hidden">
+
+    <!-- LOADER -->
+    <div id="loader" class="fixed inset-0 bg-black z-[3000] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="flex flex-col items-center justify-center">
+            <div class="loader-wrapper">
+                <svg class="loader-svg" viewBox="0 0 160 160">
+                    <circle class="loader-circle-bg" cx="80" cy="80" r="70"></circle>
+                    <circle id="loader-progress" class="loader-circle-progress" cx="80" cy="80" r="70"></circle>
+                </svg>
+                <img id="loader-logo" src="https://killyouridol.altervista.org/img/logo.svg" alt="Loader Logo">
+            </div>
+            <div class="loader-text"><span id="loader-percentage">0</span>%</div>
+        </div>
+        <div class="mt-8 text-center">
+            <h1 class="text-2xl font-black text-white uppercase italic tracking-tighter mb-2 animate-pulse">KillYourIdol <span class="text-blue-500">v6.0</span></h1>
+            <p id="loader-status" class="text-[9px] font-bold text-white/40 uppercase tracking-[0.4em]">Ottimizzazione Cache...</p>
+        </div>
+        <div id="device-id-display" class="absolute bottom-4 text-[8px] font-mono text-white/20">DEV: ...</div>
+    </div>
+
+    <!-- TOAST NOTIFICATION (New for Autoplay Muted) -->
+    <div id="toast-notification" class="fixed top-24 left-1/2 -translate-x-1/2 z-[2500] pointer-events-none opacity-0 transition-opacity duration-300">
+        <div class="bg-black/80 backdrop-blur-md border border-white/10 rounded-xl px-6 py-3 shadow-2xl flex items-center gap-3">
+            <i data-lucide="volume-x" class="w-4 h-4 text-yellow-500"></i>
+            <span class="text-[10px] font-bold text-white uppercase tracking-wide">Audio disattivato per avvio automatico</span>
+        </div>
+    </div>
+
+    <!-- LCN OVERLAY -->
+    <div id="lcn-overlay" class="absolute top-10 right-10 z-[2200] opacity-0 transform scale-90 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-4 flex flex-col items-end pointer-events-none">
+        <span class="text-[10px] uppercase font-bold text-white/40 tracking-widest mb-1">Canale</span>
+        <span id="lcn-display" class="text-6xl font-black text-white tracking-tighter lcn-digit italic font-mono"></span>
+    </div>
+
+    <main id="main-content" class="flex-1 flex flex-col h-[100dvh] overflow-hidden relative">
+        
+        <!-- HEADER -->
+        <header id="main-header" class="absolute top-0 left-0 right-0 flex items-center justify-between p-6 lg:p-10 pointer-events-none dyn-p-lg">
+            <div class="flex items-center gap-4 pointer-events-auto">
+                <div id="decoder-badge" class="hidden flex items-center gap-3 px-6 py-4 bg-green-500/10 border border-green-500/20 rounded-2xl backdrop-blur-2xl dyn-radius-btn">
+                    <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-[10px] font-black uppercase text-green-500 tracking-widest dyn-text-ui">DECODIFICA ATTIVA</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN VIEW CONTAINER -->
+        <div id="view-live" class="flex-1 flex h-full overflow-hidden relative bg-black">
+            
+            <!-- ADMIN SIDEBAR -->
+            <aside id="sidebar" class="absolute inset-y-0 left-0 glass-panel flex flex-col z-[2000] transition-all duration-500 w-80 -translate-x-full shadow-2xl border-r border-white/10">
+                <div class="p-8 flex items-center justify-between border-b border-white/5">
+                    <span class="font-black text-xl text-white uppercase italic tracking-tighter">Admin Panel</span>
+                    <button onclick="toggleSidebar()" class="text-white/50 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <nav class="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
+                    <button onclick="showTab('settings')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl glass-panel text-white hover:bg-white/10 transition-all border border-white/5 dyn-radius-btn">
+                        <i data-lucide="settings" class="w-5 h-5 text-blue-400"></i> Impostazioni
+                    </button>
+                    <div class="mt-4 px-5 py-4 flex items-center justify-between bg-white/5 rounded-xl border border-white/5 dyn-radius-btn">
+                        <div>
+                            <span class="text-[10px] font-bold text-white uppercase block dyn-text-ui">Start Random</span>
+                            <span class="text-[8px] text-white/30 dyn-text-ui">Canale a caso all'avvio</span>
+                        </div>
+                        <div class="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="toggle-random-start" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 border-gray-900 appearance-none cursor-pointer transition-all duration-300"/>
+                            <label for="toggle-random-start" class="toggle-label block overflow-hidden h-4 rounded-full bg-white/10 cursor-pointer"></label>
+                        </div>
+                    </div>
+                    <div class="mt-4"><button onclick="exportData()" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border border-white/5 text-white/70 hover:bg-white/5 transition-all dyn-radius-btn"><i data-lucide="download" class="w-5 h-5"></i> Backup Locale</button></div>
+                    <div class="mt-2"><label class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border border-white/5 text-white/70 hover:bg-white/5 transition-all dyn-radius-btn cursor-pointer"><i data-lucide="upload" class="w-5 h-5"></i> Ripristina Backup <input type="file" class="hidden" onchange="importData(event)" accept=".json"></label></div>
+                </nav>
+                <div class="p-6 border-t border-white/5 bg-black/20">
+                    <span class="block text-[8px] text-white/30 uppercase tracking-widest mb-1">Device ID</span>
+                    <span id="sidebar-device-id" class="block font-mono text-[10px] text-white/50 select-all">Loading...</span>
+                </div>
+            </aside>
+
+            <!-- PLAYER WRAPPER -->
+            <div id="player-wrapper" class="flex-1 relative flex flex-col min-w-0">
+                <div id="video-layer" class="bg-black flex items-center justify-center overflow-hidden w-full h-full relative">
+                    <video id="main-video" class="w-full h-full object-contain" playsinline crossOrigin="anonymous"></video>
+                    
+                    <!-- NO SIGNAL OVERLAY -->
+                    <div id="no-signal-overlay" class="absolute inset-0 z-20 bg-black flex items-center justify-center hidden">
+                        <video id="no-signal-video" src="https://killyouridol.altervista.org/img/nosignal.mp4" loop playsinline muted class="w-full h-full object-cover"></video>
+                    </div>
+
+                    <!-- WATERMARK CONTAINER -->
+                    <div id="watermark-container">
+                        <img id="player-watermark" src="https://killyouridol.altervista.org/img/logo.svg" alt="Watermark" crossorigin="anonymous">
+                    </div>
+                    <div id="video-touch-zone" class="absolute inset-0 z-30 cursor-none"></div>
+                </div>
+                <div id="vignette-layer"></div>
+                <div id="player-ui-layer" class="absolute inset-0 flex flex-col justify-end">
+                    <div id="mobile-gradient-overlay" class="absolute inset-x-0 bottom-0 h-[60%] z-[440] pointer-events-none" style="background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);"></div>
+                    <div id="player-controls-container" class="relative z-[450] flex flex-col w-full">
+                        <div class="w-full flex flex-col gap-2">
+                            <!-- Info Canale & Logo -->
+                            <div class="info-container-mod flex items-end gap-6 px-6 lg:px-14 dyn-gap-base dyn-p-lg pb-4">
+                                <div id="current-logo-display" class="relative overflow-hidden w-20 h-20 lg:w-32 lg:h-32 glass-panel rounded-3xl flex items-center justify-center shrink-0 shadow-2xl border border-white/10 dyn-radius-panel">
+                                    <div id="glow-background" class="absolute inset-0 z-0 bg-cover bg-center transition-all duration-700"></div>
+                                    <div class="absolute inset-0 z-10 bg-black/20"></div>
+                                    <div id="logo-content" class="relative z-20 w-full h-full flex items-center justify-center"></div>
+                                </div>
+                                <div class="flex flex-col flex-1 pb-2 min-w-0">
+                                    <div class="flex items-center gap-4 mb-2 dyn-gap-base">
+                                        <span class="px-3 py-1 glass-panel bg-white-600 text-[9px] font-black text-white uppercase tracking-widest rounded-lg italic animate-pulse dyn-text-ui dyn-radius-btn">Diretta</span>
+                                        <span id="current-category-badge" class="px-3 py-1 glass-panel bg-blue-600/20 text-[9px] font-bold text-blue-400 uppercase tracking-widest rounded-lg dyn-text-ui dyn-radius-btn">Generale</span>
+                                        <button id="current-fav-btn" onclick="toggleFavoriteCurrent()" class="text-white/20 hover:text-yellow-500 transition-colors"><i data-lucide="star" class="w-6 h-6"></i></button>
+                                    </div>
+                                    <h2 id="display-name" class="text-3xl lg:text-7xl font-black text-white uppercase italic truncate tracking-tighter leading-none text-shadow-lg dyn-text-title">Nessun Segnale</h2>
+                                </div>
+                            </div>
+                            <!-- Barra Comandi -->
+                            <div id="controls-panel" class="flex items-center gap-4 glass-panel p-4 lg:p-6 rounded-t-[2.5rem] rounded-b-none shadow-2xl border-x-0 border-t border-b-0 border-white/5 relative w-full dyn-p-base dyn-gap-base" style="border-radius: var(--radius-panel) var(--radius-panel) 0 0;">
+                                <button id="btn-admin-reopen" onclick="toggleSidebar()" class="hidden custom-player-btn w-12 h-12 rounded-xl text-yellow-500 flex items-center justify-center shadow-lg shrink-0 dyn-radius-btn"><i data-lucide="key" class="w-5 h-5"></i></button>
+                                <button id="play-pause-btn" class="custom-player-btn w-16 h-16 lg:w-20 lg:h-20 rounded-[2rem] text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all shrink-0 relative overflow-hidden dyn-radius-panel"><i data-lucide="play" class="w-6 h-6 fill-current relative z-10"></i></button>
+                                <div class="hidden lg:flex items-center gap-5 px-6 border-l border-white/10 dyn-gap-base"><i data-lucide="volume-2" class="w-5 h-5 text-white/30"></i><input type="range" id="volume-slider" class="w-24 glass-slider h-1.5 cursor-pointer rounded-lg" min="0" max="100" value="100"></div>
+                                <div id="source-switches" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-[150px] px-2"></div>
+                                <!-- Engine Toggle + Refresh -->
+                                <div class="flex-1 flex items-center justify-center relative min-w-[120px]">
+                                    <div class="flex items-center gap-2">
+                                        <button id="btn-engine-toggle" class="custom-player-btn flex items-center gap-4 px-6 py-4 rounded-2xl text-[10px] font-black uppercase text-white/70 hover:text-white transition-all dyn-radius-btn dyn-text-ui whitespace-nowrap"><i data-lucide="cpu" class="w-4 h-4"></i><span id="current-engine-label">AUTO</span><i data-lucide="chevron-up" class="w-3 h-3"></i></button>
+                                        <div class="relative">
+                                            <button id="btn-refresh-toggle" class="p-4 custom-player-btn rounded-2xl text-white/30 hover:text-white transition-all dyn-radius-btn" onclick="toggleRefreshMenu(event)"><i data-lucide="rotate-cw" class="w-5 h-5"></i></button>
+                                            <div id="refresh-menu" class="hidden absolute bottom-full mb-6 left-1/2 -translate-x-1/2 glass-panel p-3 rounded-[2rem] shadow-2xl w-56 z-[500] border border-white/5 flex flex-col gap-2 dyn-radius-panel popup-menu-enter">
+                                                <button onclick="reloadSources()" class="menu-item-btn w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase text-green-400 transition-all dyn-radius-btn dyn-text-ui flex items-center gap-3"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Ricarica Sorgenti</button>
+                                                <button onclick="location.reload()" class="menu-item-btn w-full text-left px-4 py-3 rounded-2xl text-[10px] font-black uppercase text-red-400 transition-all dyn-radius-btn dyn-text-ui flex items-center gap-3"><i data-lucide="power" class="w-4 h-4"></i> Riavvia Sito</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- ENGINE MENU -->
+                                    <div id="engine-menu" class="hidden absolute bottom-full mb-4 left-1/2 -translate-x-1/2 glass-panel p-2 rounded-2xl shadow-2xl w-48 z-[500] border border-white/10 dyn-radius-panel popup-menu-enter">
+                                        <button onclick="setEngine('auto')" id="btn-engine-auto" class="engine-btn w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase text-white/70 hover:glass-play hover:text-white transition-all dyn-radius-btn dyn-text-ui mb-1">Auto Mode</button>
+                                        <button onclick="setEngine('hls')" id="btn-engine-hls" class="engine-btn w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase text-white/70 hover:glass-play hover:text-white transition-all dyn-radius-btn dyn-text-ui mb-1">HLS.js</button>
+                                        <button onclick="setEngine('dash')" id="btn-engine-dash" class="engine-btn w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase text-white/70 hover:glass-play hover:text-white transition-all dyn-radius-btn dyn-text-ui mb-1">Dash.js</button>
+                                        <button onclick="setEngine('shaka')" id="btn-engine-shaka" class="engine-btn w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase text-white/70 hover:glass-play hover:text-white transition-all dyn-radius-btn dyn-text-ui mb-1">Shaka</button>
+                                        <button onclick="setEngine('native')" id="btn-engine-native" class="engine-btn w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase text-white/70 hover:glass-play hover:text-white transition-all dyn-radius-btn dyn-text-ui">Native</button>
+                                    </div>
+                                </div>
+                                <!-- Tools -->
+                                <div class="flex gap-2 lg:gap-3 shrink-0 border-l border-white/10 pl-4 lg:pl-6 dyn-gap-base">
+                                    <button onclick="openAddToListModal()" class="p-4 lg:p-5 custom-player-btn rounded-2xl text-green-500 hover:bg-green-500/10 transition-all dyn-radius-btn dyn-p-base"><i data-lucide="list-plus" class="w-5 h-5"></i></button>
+                                    <button onclick="captureScreenshot()" class="p-4 lg:p-5 custom-player-btn rounded-2xl text-white/30 hover:text-white transition-all dyn-radius-btn dyn-p-base"><i data-lucide="camera" class="w-5 h-5"></i></button>
+                                    <button onclick="toggleDrawer()" id="btn-toggle-drawer" class="p-4 lg:p-5 custom-player-btn rounded-2xl text-blue-500 hover:bg-blue-500/10 transition-all dyn-radius-btn dyn-p-base"><i data-lucide="list-video" class="w-5 h-5"></i></button>
+                                    <button onclick="openDrmModal()" id="btn-drm-trigger" class="hidden p-4 lg:p-5 custom-player-btn rounded-2xl text-yellow-500 hover:bg-yellow-500/10 dyn-radius-btn dyn-p-base"><i data-lucide="key" class="w-5 h-5"></i></button>
+                                    <button onclick="togglePiP()" class="p-4 lg:p-5 custom-player-btn rounded-2xl text-white/30 hover:text-white transition-all dyn-radius-btn dyn-p-base"><i data-lucide="picture-in-picture-2" class="w-5 h-5"></i></button>
+                                    <button onclick="toggleFullScreen()" class="p-4 lg:p-5 custom-player-btn rounded-2xl text-blue-400 hover:text-white transition-all dyn-radius-btn dyn-p-base"><i data-lucide="maximize" class="w-5 h-5"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Floating Create List Modal -->
+                <div id="modal-create-list" class="hidden absolute z-[2200] bg-black/90 backdrop-blur-3xl p-0 rounded-[2rem] w-[300px] shadow-2xl border border-white/10 dyn-radius-panel" style="top: 20%; left: 50%; transform: translateX(-50%);">
+                    <div id="create-list-header" class="draggable-header p-4 border-b border-white/10 flex items-center justify-between bg-white/5 rounded-t-[2rem]">
+                        <h4 class="text-sm font-black text-white uppercase italic">Nuova Lista</h4>
+                        <i data-lucide="move" class="w-4 h-4 text-white/30"></i>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <input type="text" id="new-list-name" placeholder="Nome Lista..." class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white outline-none focus:border-blue-500 dyn-radius-input">
+                        <div class="flex flex-col gap-2">
+                            <button onclick="createCustomList()" class="w-full py-3 bg-blue-600 rounded-xl text-[10px] font-black uppercase text-white shadow-lg shadow-blue-600/20 dyn-radius-btn">Crea</button>
+                            <button onclick="document.getElementById('modal-create-list').classList.add('hidden')" class="w-full py-3 glass-panel rounded-xl text-[10px] font-black uppercase text-white/30 hover:text-white transition-all dyn-radius-btn">Annulla</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RESIZER HANDLE -->
+            <div id="split-resizer"></div>
+
+            <!-- SETTINGS VIEW -->
+            <div id="view-settings" class="hidden absolute inset-0 z-[1500] overflow-y-auto p-6 lg:p-12 bg-black/95 backdrop-blur-3xl custom-scrollbar">
+                <div class="max-w-5xl mx-auto space-y-12 pb-32">
+                    <header class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-5xl font-black text-white uppercase italic tracking-tighter">Impostazioni</h1>
+                            <p class="text-white/20 uppercase text-[10px] font-bold tracking-[0.5em] mt-2">Meticolosa Personalizzazione</p>
+                        </div>
+                        <button onclick="showTab('live')" class="p-4 bg-white/5 rounded-full text-white/20 hover:text-red-500 transition-all border border-white/5"><i data-lucide="x" class="w-8 h-8"></i></button>
+                    </header>
+
+                    <div class="glass-panel rounded-[3rem] p-10 border border-white/10 slider-control-active dyn-radius-panel dyn-p-lg">
+                        <h3 class="text-xs font-black uppercase text-purple-500 tracking-widest mb-6">Design System & UI</h3>
+                        <div class="space-y-4">
+                            
+                            <!-- 1. GLOBAL THEME -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="palette" class="w-4 h-4 text-pink-400"></i> Colori Globali</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6">
+                                    <div class="space-y-4 pt-4">
+                                        <div class="flex items-center justify-between"><span class="text-xs font-bold text-white">Sfondo Body</span><input type="color" id="in-body-bg"></div>
+                                        <div class="flex items-center justify-between"><span class="text-xs font-bold text-white">Testo Principale</span><input type="color" id="in-text-color"></div>
+                                        <div class="flex items-center justify-between"><span class="text-xs font-bold text-white">Colore Accento</span><input type="color" id="in-accent-color"></div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 2. PLAYER UI -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="play-circle" class="w-4 h-4 text-blue-400"></i> Player UI & Bottoni</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <div>
+                                        <div class="flex justify-between mb-2"><span class="text-[10px] font-black uppercase text-white/60">Sfondo Pulsanti</span></div>
+                                        <div class="flex items-center gap-4"><input type="color" id="in-btn-bg-color"><div class="flex-1 flex flex-col justify-center"><span class="text-[8px] uppercase text-white/30 mb-1">Opacità</span><input type="range" id="in-btn-bg-alpha" min="0" max="100" class="w-full glass-slider h-1"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between mb-2"><span class="text-[10px] font-black uppercase text-white/60">Bordo Pulsanti</span></div>
+                                        <div class="flex items-center gap-4"><input type="color" id="in-btn-border-color"><div class="flex-1 flex flex-col justify-center"><span class="text-[8px] uppercase text-white/30 mb-1">Opacità</span><input type="range" id="in-btn-border-alpha" min="0" max="100" class="w-full glass-slider h-1"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between mb-2"><span class="text-[10px] font-black uppercase text-white/60">Colore Hover</span></div>
+                                        <div class="flex items-center gap-4"><input type="color" id="in-btn-hover-bg"><div class="flex-1 flex flex-col justify-center"><span class="text-[8px] uppercase text-white/30 mb-1">Opacità Hover</span><input type="range" id="in-btn-hover-alpha" min="0" max="100" class="w-full glass-slider h-1"></div></div>
+                                    </div>
+                                </div>
+                            </details>
+                            
+                            <!-- 3. WATERMARK SETTINGS -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="stamp" class="w-4 h-4 text-yellow-400"></i> Filigrana / Watermark</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/5">
+                                    <div>
+                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Padding Box</span>
+                                        <input type="range" id="in-wm-padding" min="0" max="50" class="w-full glass-slider h-1">
+                                    </div>
+                                    <div>
+                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Box</span>
+                                        <input type="range" id="in-wm-radius" min="0" max="50" class="w-full glass-slider h-1">
+                                    </div>
+                                </div>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <div>
+                                        <div class="flex justify-between mb-2"><span class="text-[10px] font-black uppercase text-white/60">Sfondo Vetro (Overlay)</span></div>
+                                        <div class="flex items-center gap-4">
+                                            <input type="color" id="in-wm-bg-color">
+                                            <div class="flex-1 flex flex-col justify-center">
+                                                <span class="text-[8px] uppercase text-white/30 mb-1">Opacità Sfondo</span>
+                                                <input type="range" id="in-wm-bg-alpha" min="0" max="100" class="w-full glass-slider h-1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Logo</span>
+                                            <input type="range" id="in-wm-opacity" min="0" max="100" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Grandezza</span>
+                                            <input type="range" id="in-wm-scale" min="20" max="200" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Sfocatura Vetro</span>
+                                            <input type="range" id="in-wm-blur" min="0" max="50" class="w-full glass-slider h-1">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                                        <span class="text-[10px] font-bold text-white uppercase">Includi nello Screenshot</span>
+                                        <div class="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in">
+                                            <input type="checkbox" id="in-wm-screenshot" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 border-gray-900 appearance-none cursor-pointer transition-all duration-300"/>
+                                            <label for="in-wm-screenshot" class="toggle-label block overflow-hidden h-4 rounded-full bg-white/10 cursor-pointer"></label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- LOADER & START SETTINGS -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="loader" class="w-4 h-4 text-cyan-400"></i> Loader & Start</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <p class="text-[10px] text-white/40 mb-2">Personalizza il logo all'avvio del player.</p>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Grandezza Logo</span>
+                                            <input type="range" id="in-loader-scale" min="10" max="100" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Logo</span>
+                                            <input type="range" id="in-loader-opacity" min="0" max="100" class="w-full glass-slider h-1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 4. VIGNETTE SETTINGS -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="aperture" class="w-4 h-4 text-green-400"></i> Vignettatura</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <div>
+                                        <div class="flex justify-between mb-2"><span class="text-[10px] font-black uppercase text-white/60">Tinta & Intensità</span></div>
+                                        <div class="flex items-center gap-4"><input type="color" id="in-vignette-color"><div class="flex-1 flex flex-col justify-center"><span class="text-[8px] uppercase text-white/30 mb-1">Opacità Max</span><input type="range" id="in-vignette-alpha" min="0" max="100" class="w-full glass-slider h-1"></div></div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div><span class="text-[8px] uppercase text-white/30 mb-1 block">Inizio (Cerchio Interno)</span><input type="range" id="in-vignette-start" min="0" max="100" class="w-full glass-slider h-1"></div>
+                                        <div><span class="text-[8px] uppercase text-white/30 mb-1 block">Fine (Bordo Esterno)</span><input type="range" id="in-vignette-end" min="0" max="150" class="w-full glass-slider h-1"></div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 5. GLASS ENGINE BASE -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="layout" class="w-4 h-4 text-purple-400"></i> Glass Engine Base</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <div class="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-2 block">Tinta Sfondo</span>
+                                            <div class="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
+                                                <input type="color" id="in-glass-base-color" class="w-8 h-8 rounded-lg overflow-hidden border-none p-0 cursor-pointer bg-transparent" title="Scegli colore sfondo">
+                                                <div class="flex flex-col">
+                                                    <span class="text-[9px] font-bold text-white uppercase">Sfondo</span>
+                                                    <span id="hex-glass-base" class="text-[8px] font-mono text-white/40">#000000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-2 block">Tinta Bordo</span>
+                                            <div class="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
+                                                <input type="color" id="in-glass-border-color" class="w-8 h-8 rounded-lg overflow-hidden border-none p-0 cursor-pointer bg-transparent" title="Scegli colore bordo">
+                                                <div class="flex flex-col">
+                                                    <span class="text-[9px] font-bold text-white uppercase">Bordo</span>
+                                                    <span id="hex-glass-border" class="text-[8px] font-mono text-white/40">#FFFFFF</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="text-[8px] font-bold uppercase text-white/50">Canali RGB (Avanzato)</span>
+                                        </div>
+                                        <div class="grid grid-cols-3 gap-4">
+                                            <div><label class="text-[8px] text-red-500 uppercase font-bold block mb-1">Red</label><input type="range" id="in-glass-r" min="0" max="255" class="w-full glass-slider h-1"></div>
+                                            <div><label class="text-[8px] text-green-500 uppercase font-bold block mb-1">Green</label><input type="range" id="in-glass-g" min="0" max="255" class="w-full glass-slider h-1"></div>
+                                            <div><label class="text-[8px] text-blue-500 uppercase font-bold block mb-1">Blue</label><input type="range" id="in-glass-b" min="0" max="255" class="w-full glass-slider h-1"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Sfondo</span>
+                                            <input type="range" id="in-glass-alpha" min="0" max="100" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Blur (Sfocatura)</span>
+                                            <input type="range" id="in-glass-blur" min="0" max="100" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Saturazione (%)</span>
+                                            <input type="range" id="in-glass-saturate" min="0" max="300" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Bordo</span>
+                                            <input type="range" id="in-glass-border-alpha" min="0" max="100" class="w-full glass-slider h-1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 6. GEOMETRIA & SPAZIATURA -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="ruler" class="w-4 h-4 text-indigo-400"></i> Geometria & Spazi</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <div class="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Pannelli</span>
+                                            <input type="range" id="in-radius-panel" min="0" max="50" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Bottoni</span>
+                                            <input type="range" id="in-radius-btn" min="0" max="30" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Input</span>
+                                            <input type="range" id="in-radius-input" min="0" max="30" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Spaziatura Base</span>
+                                            <input type="range" id="in-spacing-base" min="4" max="40" class="w-full glass-slider h-1">
+                                        </div>
+                                         <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Spaziatura Larga</span>
+                                            <input type="range" id="in-spacing-lg" min="10" max="100" class="w-full glass-slider h-1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 7. TIPOGRAFIA -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="type" class="w-4 h-4 text-teal-400"></i> Tipografia & Testi</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="mb-6">
+                                    <span class="text-[8px] uppercase text-white/30 mb-1 block">Font Principale</span>
+                                    <div class="relative">
+                                        <select id="in-font-family" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white outline-none appearance-none cursor-pointer hover:bg-white/10 transition-all dyn-radius-input">
+                                            <option value="Inter">Inter (Default)</option>
+                                            <option value="Roboto">Roboto (Android Style)</option>
+                                            <option value="Montserrat">Montserrat (Modern)</option>
+                                            <option value="Open Sans">Open Sans (Clean)</option>
+                                            <option value="Courier Prime">Courier Prime (Hacker/Mono)</option>
+                                            <option value="Playfair Display">Playfair Display (Elegant)</option>
+                                        </select>
+                                        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none"></i>
+                                    </div>
+                                </div>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <div>
+                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Titoli (Nome Canale)</span>
+                                        <input type="range" id="in-font-title" min="16" max="100" class="w-full glass-slider h-1">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Testo Base</span>
+                                            <input type="range" id="in-font-base" min="8" max="24" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Testo UI (Etichette)</span>
+                                            <input type="range" id="in-font-ui" min="6" max="18" class="w-full glass-slider h-1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 8. ANIMAZIONI -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="zap" class="w-4 h-4 text-yellow-400"></i> Velocità Animazioni</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-4 pt-6">
+                                    <div>
+                                        <div class="flex justify-between mb-2">
+                                            <span class="text-[10px] font-black uppercase text-white/60">Durata Transizioni (ms)</span>
+                                            <span id="anim-val-display" class="text-[10px] font-mono text-white">400ms</span>
+                                        </div>
+                                        <input type="range" id="in-anim-speed" min="0" max="2000" step="50" class="w-full glass-slider h-1">
+                                        <p class="text-[8px] text-white/30 mt-2">Valori bassi = scattante. Valori alti = fluido/lento.</p>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 9. COMPONENTI UI -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i> Componenti UI</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    <div class="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Grandezza Slider (Thumb)</span>
+                                            <input type="range" id="in-thumb-size" min="8" max="40" class="w-full glass-slider h-1">
+                                        </div>
+                                        <div>
+                                            <span class="text-[8px] uppercase text-white/30 mb-1 block">Altezza Barra Slider</span>
+                                            <input type="range" id="in-track-height" min="1" max="20" class="w-full glass-slider h-1">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-[8px] uppercase text-white/30 mb-1 block">Colore Sfondo Slider (Thumb)</span>
+                                        <div class="flex items-center gap-4">
+                                             <input type="color" id="in-thumb-bg-color">
+                                             <span class="text-[9px] text-white/40 italic">Colore del pallino di trascinamento</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- 10. TELECOMANDO & LISTE (FIXED) -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel mt-4">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="tv" class="w-4 h-4 text-pink-400"></i> Telecomando & Drawer</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-6 pt-6">
+                                    
+                                    <!-- DIMENSIONI -->
+                                    <div>
+                                        <span class="text-[8px] uppercase text-white/30 mb-2 block font-bold tracking-widest">Dimensioni & Struttura</span>
+                                        <div class="grid grid-cols-2 gap-6">
+                                            <div>
+                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Larghezza Pannello</span>
+                                                <input type="range" id="in-drawer-width" min="250" max="600" class="w-full glass-slider h-1">
+                                            </div>
+                                            <div>
+                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Opacità Sfondo</span>
+                                                <input type="range" id="in-drawer-bg-alpha" min="0" max="100" class="w-full glass-slider h-1">
+                                            </div>
+                                            <!-- NEW INPUT FOR ITEM HEIGHT -->
+                                            <div>
+                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Altezza Canali</span>
+                                                <input type="range" id="in-drawer-item-height" min="30" max="100" class="w-full glass-slider h-1">
+                                            </div>
+                                            <div>
+                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Spazio tra Canali (Gap)</span>
+                                                <input type="range" id="in-drawer-item-gap" min="0" max="20" class="w-full glass-slider h-1">
+                                            </div>
+                                             <div>
+                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Elementi</span>
+                                                <input type="range" id="in-drawer-item-radius" min="0" max="30" class="w-full glass-slider h-1">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- STILE ATTIVO -->
+                                    <div class="pt-4 border-t border-white/5">
+                                        <span class="text-[8px] uppercase text-white/30 mb-2 block font-bold tracking-widest">Stile Canale Attivo</span>
+                                        <div class="flex items-center gap-6">
+                                            <div>
+                                                <span class="text-[8px] uppercase text-white/30 mb-2 block">Colore Selezione</span>
+                                                <div class="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
+                                                    <input type="color" id="in-drawer-active-bg" class="w-8 h-8 rounded-lg overflow-hidden border-none p-0 cursor-pointer bg-transparent">
+                                                </div>
+                                            </div>
+                                            <div class="flex-1">
+                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Intensità Colore (Alpha)</span>
+                                                <input type="range" id="in-drawer-active-alpha" min="0" max="100" class="w-full glass-slider h-1">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ELEMENTI UI -->
+                                    <div class="pt-4 border-t border-white/5">
+                                        <span class="text-[8px] uppercase text-white/30 mb-2 block font-bold tracking-widest">Categorie & Ricerca</span>
+                                         <div class="grid grid-cols-2 gap-6">
+                                            <div>
+                                                <span class="text-[8px] uppercase text-white/30 mb-1 block">Raggio Pillole Categorie</span>
+                                                <input type="range" id="in-drawer-pill-radius" min="0" max="25" class="w-full glass-slider h-1">
+                                            </div>
+                                         </div>
+                                    </div>
+
+                                </div>
+                            </details>
+
+                             <!-- ADVANCED CSS EDITOR -->
+                            <details class="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden open:bg-white/5 transition-all dyn-radius-panel">
+                                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-all">
+                                    <span class="text-xs font-black uppercase text-white flex items-center gap-3"><i data-lucide="code" class="w-4 h-4 text-orange-400"></i> Advanced CSS Editor</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-white/30 group-open:rotate-180 transition-transform"></i>
+                                </summary>
+                                <div class="p-6 pt-0 border-t border-white/5 mt-2 space-y-4 pt-6">
+                                    <p class="text-[10px] text-white/40 mb-2">Modifica direttamente lo stile dell'app. Le modifiche vengono salvate in locale.</p>
+                                    <div class="relative w-full h-96 rounded-xl overflow-hidden border border-white/10 bg-[#0d1117]">
+                                        <textarea id="custom-css-editor" class="w-full h-full bg-transparent text-white/80 font-mono text-xs p-4 outline-none resize-none custom-scrollbar" spellcheck="false" style="tab-size: 2; line-height: 1.5;"></textarea>
+                                    </div>
+                                    <div class="flex gap-2 mt-4">
+                                        <button onclick="applyCss()" class="flex-1 py-3 bg-blue-600 rounded-xl text-[10px] font-black uppercase text-white shadow-lg shadow-blue-600/20 dyn-radius-btn hover:bg-blue-500 transition-all">Applica & Salva</button>
+                                        <button onclick="resetCss()" class="px-6 py-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all dyn-radius-btn">Reset</button>
+                                    </div>
+                                </div>
+                            </details>
+
+                        </div>
+                        <button onclick="resetVisuals()" class="mt-8 w-full py-4 border border-red-500/20 text-red-500 text-[10px] font-black uppercase rounded-xl hover:bg-red-500 hover:text-white transition-all dyn-radius-btn">Ripristina Default</button>
+                    </div>
+                    
+                    <!-- BULK SOURCES -->
+                    <div class="glass-panel rounded-[3rem] p-10 space-y-6 border border-white/10 dyn-radius-panel dyn-p-lg">
+                        <textarea id="bulk-sources-input" class="w-full h-40 bg-black/40 border border-white/10 rounded-3xl p-6 text-sm text-white font-mono outline-none focus:border-blue-500 transition-all resize-none custom-scrollbar dyn-radius-panel" placeholder="Sources..."></textarea>
+                        <button onclick="saveBulkSources()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase text-xs italic tracking-widest shadow-xl hover:bg-blue-500 transition-all dyn-radius-btn">Salva</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHANNELS DRAWER -->
+            <div id="channel-drawer" class="absolute inset-y-0 right-0 w-80 lg:w-96 glass-panel z-[1600] transform translate-x-full flex flex-col shadow-2xl border-l border-white/10">
+                <div class="p-4 border-b border-white/5 flex items-center justify-between shrink-0 dyn-p-base">
+                    <span class="text-1xl font-black text-white-500 uppercase italic">telecomando</span>
+                    <button onclick="toggleDrawer()" class="p-2 text-white/30 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="flex border-b border-white/5 shrink-0">
+                    <button onclick="setDrawerMainTab('channels')" id="tab-main-channels" class="flex-1 py-4 text-[10px] font-black uppercase border-b-2 border-transparent text-white/40 hover:text-white transition-all tab-glass-active dyn-text-ui">Canali</button>
+                    <button onclick="setDrawerMainTab('lists')" id="tab-main-lists" class="flex-1 py-4 text-[10px] font-black uppercase border-b-2 border-transparent text-white/40 hover:text-white transition-all dyn-text-ui">Le Mie Liste</button>
+                </div>
+                <div id="view-channels-controls" class="flex flex-col shrink-0">
+                    <div class="px-4 pt-4 pb-2 dyn-p-base">
+                        <div class="relative"><i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20"></i><input type="text" id="channel-search" placeholder="Cerca canale..." class="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-xs text-white outline-none focus:border-blue-500/50 transition-all dyn-radius-input dyn-text-base"></div>
+                    </div>
+                    <div class="px-4 pb-2 overflow-x-auto custom-scrollbar flex gap-2 dyn-p-base" id="category-pills"></div>
+                </div>
+                <div id="view-lists-controls" class="hidden p-4 shrink-0 space-y-2 dyn-p-base">
+                    <button onclick="openCreateListModal()" class="w-full py-3 glass-panel hover:glass-play rounded-xl text-[10px] font-black uppercase text-white transition-all flex items-center justify-center gap-2 dyn-radius-btn dyn-text-ui"><i data-lucide="plus-circle" class="w-4 h-4"></i> Crea Nuova Lista</button>
+                </div>
+                <div id="drawer-list" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2 dyn-p-base"></div>
+            </div>
+        </div>
+        
+        <input type="text" id="mobile-keyboard-input" autocomplete="off">
+    </main>
+
+    <!-- MODALS -->
+    
+    <div id="modal-confirm" class="hidden fixed inset-0 z-[3000] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6">
+        <div class="glass-panel rounded-[2rem] w-full max-w-sm p-6 space-y-4 shadow-2xl border border-white/10 text-center">
+            <h4 id="confirm-title" class="text-lg font-black text-white uppercase italic">Conferma</h4>
+            <p id="confirm-msg" class="text-xs text-white/60"></p>
+            <div class="flex gap-2 mt-4">
+                <button id="confirm-yes-btn" class="flex-1 py-3 bg-red-600 rounded-xl text-[10px] font-black uppercase text-white hover:bg-red-500">Sì</button>
+                <button onclick="document.getElementById('modal-confirm').classList.add('hidden')" class="flex-1 py-3 glass-panel rounded-xl text-[10px] font-black uppercase text-white/50 hover:text-white">Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-lcn-conflict" class="hidden fixed inset-0 z-[2500] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6">
+        <div class="glass-panel rounded-[3rem] w-full max-w-md p-8 space-y-6 shadow-2xl border border-white/10 dyn-radius-panel dyn-p-lg">
+            <h4 class="text-xl font-black text-white uppercase italic text-center">Seleziona Canale</h4>
+            <div class="text-center text-white/50 text-xs">Più canali trovati per il numero <span id="lcn-conflict-number" class="text-white font-bold"></span></div>
+            <div id="lcn-conflict-list" class="flex-1 overflow-y-auto space-y-2 max-h-[50vh] custom-scrollbar"></div>
+            <div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                <input type="checkbox" id="lcn-remember-check" class="w-4 h-4 rounded border-gray-600 bg-black/50 text-blue-500 focus:ring-blue-500">
+                <label for="lcn-remember-check" class="text-[9px] text-white/70 uppercase font-bold tracking-wide cursor-pointer select-none">Ho compreso, non mostrare più per questo canale</label>
+            </div>
+            <button onclick="document.getElementById('modal-lcn-conflict').classList.add('hidden')" class="w-full py-4 glass-panel rounded-2xl text-[10px] font-black uppercase text-white/30 hover:text-white transition-all shrink-0 dyn-radius-btn">Chiudi</button>
+        </div>
+    </div>
+
+    <div id="modal-drm" class="hidden fixed inset-0 z-[2500] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6">
+        <div class="glass-panel rounded-[3rem] w-full max-w-md p-10 space-y-8 shadow-2xl border border-white/10 dyn-radius-panel dyn-p-lg">
+            <h4 class="text-xl font-black text-white uppercase italic text-center">Configura ClearKey</h4>
+            <div class="space-y-4">
+                <input type="text" id="drm-kid" placeholder="Key ID (Hex)" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-xs font-mono text-white outline-none dyn-radius-input">
+                <input type="text" id="drm-key" placeholder="Key Value (Hex)" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-xs font-mono text-white outline-none dyn-radius-input">
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="saveDrmKey()" class="w-full py-5 bg-green-600 rounded-2xl text-[10px] font-black uppercase text-white shadow-lg shadow-green-600/20 dyn-radius-btn">Applica</button>
+                <button onclick="closeDrmModal()" class="w-full py-5 glass-panel rounded-2xl text-[10px] font-black uppercase text-white/30 hover:text-white transition-all dyn-radius-btn">Chiudi</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-add-to-list" class="hidden fixed inset-0 z-[2500] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6">
+        <div class="glass-panel rounded-[3rem] w-full max-w-md p-10 space-y-6 shadow-2xl border border-white/10 max-h-[80vh] flex flex-col dyn-radius-panel dyn-p-lg">
+            <h4 class="text-xl font-black text-white uppercase italic text-center">Aggiungi a Lista</h4>
+            <div id="add-to-list-container" class="flex-1 overflow-y-auto space-y-2 custom-scrollbar"></div>
+            <button onclick="document.getElementById('modal-add-to-list').classList.add('hidden')" class="w-full py-4 glass-panel rounded-2xl text-[10px] font-black uppercase text-white/30 hover:text-white transition-all shrink-0 dyn-radius-btn">Chiudi</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
